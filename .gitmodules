@@ -82,3 +82,6 @@
 [submodule "A06-Backdoor-Persistence-Service-Foothold/A06_2_Service_based_Foothold"]
 	path = A06-Backdoor-Persistence-Service-Foothold/A06_2_Service_based_Foothold
 	url = https://github.com/securedglobe/PersistantService
+[submodule "A01-Ransomware-Cryptor/A01_3_CherryRuby"]
+	path = A01-Ransomware-Cryptor/A01_3_CherryRuby
+	url = https://github.com/somby0x55/CherryRuby
