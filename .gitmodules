@@ -61,3 +61,15 @@
 [submodule "A04-Cred-Theft-Spyware-Keylogger/A04_4_Spyware_Pipeline"]
 	path = A04-Cred-Theft-Spyware-Keylogger/A04_4_Spyware_Pipeline
 	url = https://github.com/Dev-isururoy/Simple-spyware
+[submodule "A05-C2-Beaconing-Network-Signaling/A05_1_HTTP_Beacon"]
+	path = A05-C2-Beaconing-Network-Signaling/A05_1_HTTP_Beacon
+	url = https://github.com/one-trick/BenignBeaconer
+[submodule "A05-C2-Beaconing-Network-Signaling/A05_4_HTTPS_Beacon_w_Command_Polling"]
+	path = A05-C2-Beaconing-Network-Signaling/A05_4_HTTPS_Beacon_w_Command_Polling
+	url = https://github.com/28Zaaky/PulseC2
+[submodule "A05-C2-Beaconing-Network-Signaling/A05_5_TCP_Reverse_Shell"]
+	path = A05-C2-Beaconing-Network-Signaling/A05_5_TCP_Reverse_Shell
+	url = https://github.com/mobdk/TCPClientReverseShellCS
+[submodule "A05-C2-Beaconing-Network-Signaling/A05_6_TCP_Bind_Shell"]
+	path = A05-C2-Beaconing-Network-Signaling/A05_6_TCP_Bind_Shell
+	url = https://github.com/melardev/C_Win32_BindShell_Sync
