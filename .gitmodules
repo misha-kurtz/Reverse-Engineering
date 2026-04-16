@@ -28,3 +28,6 @@
 [submodule "A02-Process-Inj-Hollowing-Code-Inj/A02_1_Simple_DLL_Injection"]
 	path = A02-Process-Inj-Hollowing-Code-Inj/A02_1_Simple_DLL_Injection
 	url = https://github.com/IDouble/Simple-DLL-Injection
+[submodule "A03-Dropper-Loader-Stager/A03_5_Network_to_Mem_Loader"]
+	path = A03-Dropper-Loader-Stager/A03_5_Network_to_Mem_Loader
+	url = https://github.com/kleiton0x00/RemoteShellcodeExec
