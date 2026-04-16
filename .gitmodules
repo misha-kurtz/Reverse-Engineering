@@ -1,0 +1,12 @@
+[submodule "A01-Ransomware-Cryptor/A01_3_Stockholm"]
+	path = A01-Ransomware-Cryptor/A01_3_Stockholm
+	url = https://github.com/R4mnesia/Stockholm
+[submodule "A01-Ransomware-Cryptor/A01_1_0xj0hn_Ransomware"]
+	path = A01-Ransomware-Cryptor/A01_1_0xj0hn_Ransomware
+	url = https://github.com/0xj0hn/ransomware
+[submodule "A01-Ransomware-Cryptor/A01_2_Hidden_Tear"]
+	path = A01-Ransomware-Cryptor/A01_2_Hidden_Tear
+	url = https://github.com/misha-kurtz/hidden-tear
+[submodule "A01-Ransomware-Cryptor/A01_4_EDA2"]
+	path = A01-Ransomware-Cryptor/A01_4_EDA2
+	url = https://github.com/misha-kurtz/eda2
