@@ -73,3 +73,12 @@
 [submodule "A05-C2-Beaconing-Network-Signaling/A05_6_TCP_Bind_Shell"]
 	path = A05-C2-Beaconing-Network-Signaling/A05_6_TCP_Bind_Shell
 	url = https://github.com/melardev/C_Win32_BindShell_Sync
+[submodule "A06-Backdoor-Persistence-Service-Foothold/A06_1a_Registry_Runkey_Persist"]
+	path = A06-Backdoor-Persistence-Service-Foothold/A06_1a_Registry_Runkey_Persist
+	url = https://github.com/nostdlib/RegistryPersist
+[submodule "A06-Backdoor-Persistence-Service-Foothold/A06_1b_Registry_Persist_via_Hive_Save_Restore"]
+	path = A06-Backdoor-Persistence-Service-Foothold/A06_1b_Registry_Persist_via_Hive_Save_Restore
+	url = https://github.com/tccontre/Reg-Restore-Persistence-Mole
+[submodule "A06-Backdoor-Persistence-Service-Foothold/A06_2_Service_based_Foothold"]
+	path = A06-Backdoor-Persistence-Service-Foothold/A06_2_Service_based_Foothold
+	url = https://github.com/securedglobe/PersistantService
