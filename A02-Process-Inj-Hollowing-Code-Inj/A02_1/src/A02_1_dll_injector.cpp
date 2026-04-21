@@ -7,7 +7,7 @@ using namespace std;
 
 int main()
 {
-    LPCSTR DllPath = "C:\\Users\\misha.kurtz\\A02-Process-Inj-Hollowing-Code-Inj\\A02_1\\bin\\A02_1_marker.dll"; // The Path to our DLL
+    LPCSTR DllPath = "C:\\Users\\misha.kurtz\\Reverse-Engineering\\A02-Process-Inj-Hollowing-Code-Inj\\A02_1\\bin\\A02_1_marker.dll"; // The Path to our DLL
 
     HWND hwnd = FindWindowA(NULL, "A02_1_target_process");               // HWND (Windows window) by Window Name
     DWORD procID;                                                   // A 32-bit unsigned integer, DWORDS are mostly used to store Hexadecimal Addresses
