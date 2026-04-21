@@ -26,10 +26,20 @@ int main()
 
     WaitForSingleObject(hLoadThread, INFINITE); // Wait for the execution of our loader thread to finish
 
+    DWORD remoteExitCode = 0;
+    if (GetExitCodeThread(hLoadThread, &remoteExitCode))
+    {
+        cout << "Remote thread exit code: 0x" << hex << remoteExitCode << endl;
+    }
+    else
+    {
+        cout << "Failed to get remote thread exit code." << endl;
+    }
+
     cout << "Dll path allocated at: " << hex << pDllPath << endl;
     cin.get();
 
-    VirtualFreeEx(handle, pDllPath, strlen(DllPath) + 1, MEM_RELEASE); // Free the memory allocated for our dll path
+    VirtualFreeEx(handle, pDllPath, 0, MEM_RELEASE); // Free the memory allocated for our dll path
 
     return 0;
 }
