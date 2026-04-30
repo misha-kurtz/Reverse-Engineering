@@ -1,4 +1,4 @@
-// a02_1_marker.cpp
+// a02_4_marker.cpp
 // Custom DLL for DLL injection
 #include <windows.h>
 #include <string>
@@ -37,7 +37,7 @@ static void WriteMarkerFile()
     std::string timestamp = GetFileTimeString();
 
     std::ostringstream oss;
-    oss << "THESIS_A02_1_DLL_LOADED\r\n";
+    oss << "THESIS_A02_4_DLL_LOADED_VIA_APC_INJECTION\r\n";
     oss << "Timestamp: " << timestamp << "\r\n";
     oss << "PID: " << pid << "\r\n";
     oss << "ProcessPath: " << processPath << "\r\n";
@@ -62,7 +62,7 @@ static void WriteMarkerFile()
         CloseHandle(hFile);
     }
 
-    OutputDebugStringA("THESIS_A02_1_DLL_LOADED");
+    OutputDebugStringA("THESIS_A02_4_DLL_LOADED_VIA_APC_INJECTION");
 }
 
 DWORD WINAPI MarkerThread(LPVOID)
