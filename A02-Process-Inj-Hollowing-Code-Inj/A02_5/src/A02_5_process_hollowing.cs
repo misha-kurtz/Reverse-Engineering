@@ -26,8 +26,14 @@ namespace RunPE
                 RuntimeEnvironment.GetRuntimeDirectory(),
                 "RegAsm.exe"
             );*/
-            string targetPath = @"C:\Windows\Notepad.exe";
+            string targetPath = @"C:\Windows\SysWOW64\notepad.exe";
             string payloadPath = @"C:\Users\misha.kurtz\Reverse-Engineering\A02-Process-Inj-Hollowing-Code-Inj\A02_5\bin\A02_5_loaded_exe.exe";
+
+            // 🔍 Add debug prints HERE
+            Console.WriteLine($"[A02_5] Target path: {targetPath}");
+            Console.WriteLine($"[A02_5] Target exists: {File.Exists(targetPath)}");
+            Console.WriteLine($"[A02_5] Payload path: {payloadPath}");
+            Console.WriteLine($"[A02_5] Payload exists: {File.Exists(payloadPath)}");
 
             if (!File.Exists(payloadPath))
             {
@@ -174,9 +180,20 @@ namespace RunPE
                     }
                     if (ResumeThread(pi.ThreadHandle) == -1) throw new Exception();
                 }
-                catch
+                catch (Exception ex)
                 {
-                    Process.GetProcessById(Convert.ToInt32(pi.ProcessId)).Kill();
+                    Console.WriteLine($"[A02_5] Failed: {ex.Message}");
+                    Console.WriteLine($"[A02_5] Last Win32 Error: {Marshal.GetLastWin32Error()}");
+
+                    if (pi.ProcessId != 0)
+                    {
+                        try
+                        {
+                            Process.GetProcessById(Convert.ToInt32(pi.ProcessId)).Kill();
+                        }
+                        catch { }
+                    }
+
                     continue;
                 }
                 break;
