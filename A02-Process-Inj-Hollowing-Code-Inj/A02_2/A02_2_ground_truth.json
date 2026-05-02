@@ -1,0 +1,122 @@
+{
+    "sample_id": "A02_2",
+    "sample_name": "remote_thread_shellcode_injection",
+    "dataset": "A",
+    "dataset_type": "controlled",
+    "behavior_class": "A02",
+    "behavior_class_name": "Controlled Injection Behavior Class",
+    "source_repository": "https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A02-Process-Inj-Hollowing-Code-Inj/A02_2",
+    "language": "C++",
+    "platform": "Windows",
+    "build_architecture": "x64",
+    "primary_behavior": "process_injection",
+    "technique": "remote_thread_injection",
+    "subtechnique": "shellcode_remote_thread",
+    "execution_model": "direct_code_execution",
+    "description": "Injects embedded x64 shellcode into a remote process by allocating memory, writing the payload, changing memory permissions to executable, and starting a remote thread at the injected buffer address.",
+    "components": {
+        "injector": {
+            "filename": "A02_2_remote_thread_inject.exe",
+            "role": "performs process enumeration, cross-process memory allocation, shellcode write, memory protection change, and remote thread creation",
+            "source_origin": "custom controlled implementation"
+        },
+        "payload": {
+            "filename": "embedded_shellcode",
+            "role": "embedded x64 shellcode executed inside the remote process",
+            "payload_type": "msfvenom_windows_x64_exec_calc",
+            "payload_generation": "msfvenom -p windows/x64/exec CMD=calc.exe EXITFUNC=thread -f c"
+        }
+    },
+    "key_apis": {
+        "injector": [
+            "CreateToolhelp32Snapshot",
+            "Process32First",
+            "Process32Next",
+            "OpenProcess",
+            "VirtualAllocEx",
+            "WriteProcessMemory",
+            "VirtualProtectEx",
+            "CreateRemoteThread",
+            "GetThreadId",
+            "VirtualFreeEx",
+            "CloseHandle",
+            "GetLastError"
+        ],
+        "payload": [
+            "position-independent shellcode",
+            "PEB walking",
+            "API hashing or dynamic API resolution",
+            "WinExec or CreateProcess-style execution behavior",
+            "ExitThread-compatible termination"
+        ]
+    },
+    "payload_behavior": {
+        "description": "The embedded x64 shellcode executes calc.exe from inside the target process context.",
+        "expected_actions": [
+            "execute injected shellcode",
+            "resolve required Windows APIs dynamically",
+            "launch calc.exe",
+            "terminate shellcode thread"
+        ],
+        "payload_command": "calc.exe",
+        "payload_exit_function": "thread"
+    },
+    "code_placement": "Raw shellcode bytes written directly into remote process memory",
+    "execution_trigger": "Immediate execution via CreateRemoteThread",
+    "execution_target": "remote process identified by process image name",
+    "expected_static_signals": {
+        "injector": [
+            "large embedded unsigned char payload buffer",
+            "calc.exe string embedded near shellcode tail",
+            "CreateToolhelp32Snapshot process enumeration",
+            "Process32First and Process32Next process walking",
+            "OpenProcess with PROCESS_ALL_ACCESS",
+            "VirtualAllocEx allocating remote memory",
+            "WriteProcessMemory writing raw payload bytes",
+            "VirtualProtectEx changing memory protection to PAGE_EXECUTE_READ",
+            "CreateRemoteThread using remote buffer address as thread start routine",
+            "absence of LoadLibraryA-based DLL path injection"
+        ],
+        "payload": [
+            "position-independent x64 shellcode bytes",
+            "PEB traversal patterns",
+            "hashed API resolution constants",
+            "embedded calc.exe command string",
+            "thread-based exit behavior"
+        ]
+    },
+    "expected_dynamic_signals": {
+        "injector": [
+            "process snapshot enumeration",
+            "target process discovered by executable name",
+            "handle open to remote process",
+            "remote PAGE_READWRITE memory allocation",
+            "WriteProcessMemory into target process",
+            "remote memory protection changed to PAGE_EXECUTE_READ",
+            "remote thread creation with start address inside private allocated memory"
+        ],
+        "target": [
+            "remote thread begins execution from injected private memory region",
+            "no payload DLL is loaded",
+            "calc.exe is spawned from target process context",
+            "injected thread exits after payload execution"
+        ]
+    },
+    "semantic_meaning": "Executes raw position-independent code inside another process by writing shellcode into remote memory and starting a remote thread at that memory address, without using the Windows loader or loading an external DLL.",
+    "control_notes": {
+        "benign_intent": true,
+        "network_required": false,
+        "persistence": false,
+        "credential_access": false,
+        "destructive_actions": false,
+        "payload_effect": "launches calc.exe as benign execution marker"
+    },
+    "success_conditions": [
+        "injector finds target process by image name",
+        "remote memory allocation succeeds",
+        "embedded shellcode is written into target process memory",
+        "remote memory protection is changed to PAGE_EXECUTE_READ",
+        "remote thread is created with start address at injected shellcode buffer",
+        "calc.exe is launched"
+    ]
+}

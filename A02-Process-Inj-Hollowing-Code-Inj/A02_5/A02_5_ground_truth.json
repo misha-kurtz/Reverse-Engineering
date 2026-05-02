@@ -1,0 +1,146 @@
+{
+    "sample_id": "A02_5",
+    "sample_name": "process_hollowing_runpe",
+    "dataset": "A",
+    "dataset_type": "controlled",
+    "behavior_class": "A02",
+    "behavior_class_name": "Controlled Injection Behavior Class",
+    "source_repository": "https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A02-Process-Inj-Hollowing-Code-Inj/A02_5",
+    "language": "C++",
+    "platform": "Windows",
+    "build_architecture": "x64",
+    "primary_behavior": "process_injection",
+    "technique": "process_hollowing",
+    "subtechnique": "runpe_suspended_process_image_replacement",
+    "execution_model": "image_replacement",
+    "description": "Creates a target process in a suspended state, reads a replacement PE image from disk, maps the replacement image into the target process, updates the target process PEB and thread context, and resumes the original thread so the replacement executable runs under the target process identity.",
+    "components": {
+        "hollower": {
+            "filename": "A02_5_process_hollowing.exe",
+            "role": "creates a suspended target process and replaces its in-memory image with a supplied PE executable",
+            "source_origin": "custom controlled implementation"
+        },
+        "payload": {
+            "filename": "A02_5_loaded_exe.exe",
+            "role": "replacement PE image mapped into the suspended target process",
+            "payload_type": "benign_executable"
+        },
+        "target": {
+            "filename": "user-supplied target process path",
+            "role": "legitimate process image initially created in suspended state and then hollowed"
+        }
+    },
+    "key_apis": {
+        "hollower": [
+            "CreateFileA",
+            "GetFileSize",
+            "ReadFile",
+            "HeapAlloc",
+            "HeapFree",
+            "CreateProcessA",
+            "IsWow64Process",
+            "GetThreadContext",
+            "Wow64GetThreadContext",
+            "ReadProcessMemory",
+            "VirtualAllocEx",
+            "WriteProcessMemory",
+            "SetThreadContext",
+            "Wow64SetThreadContext",
+            "ResumeThread",
+            "TerminateProcess",
+            "CloseHandle"
+        ],
+        "payload": [
+            "replacement PE entry point",
+            "PE headers",
+            "section table",
+            "relocation table if present"
+        ]
+    },
+    "payload_behavior": {
+        "description": "The supplied PE payload is manually mapped into the suspended target process and executed from the replacement image entry point.",
+        "expected_actions": [
+            "read replacement PE from disk",
+            "validate PE headers",
+            "map PE headers into target process memory",
+            "map PE sections into target process memory",
+            "apply base relocations if needed",
+            "update target PEB image base",
+            "redirect suspended thread context to replacement entry point",
+            "resume target thread"
+        ],
+        "payload_file": "A02_5_loaded_exe.exe"
+    },
+    "code_placement": "Replacement PE headers and sections written into the suspended target process address space",
+    "execution_trigger": "ResumeThread after SetThreadContext redirects the suspended primary thread to the replacement PE entry point",
+    "execution_target": "suspended target process created with CreateProcessA and CREATE_SUSPENDED",
+    "expected_static_signals": {
+        "hollower": [
+            "CreateProcessA called with CREATE_SUSPENDED",
+            "PE file parsing using IMAGE_DOS_HEADER and IMAGE_NT_HEADERS",
+            "architecture checks using IsWow64Process and PE optional header magic",
+            "target PEB image base discovery using GetThreadContext or Wow64GetThreadContext",
+            "ReadProcessMemory reading target image headers and PEB fields",
+            "VirtualAllocEx allocating space for replacement image in target process",
+            "WriteProcessMemory writing PE headers into target process",
+            "WriteProcessMemory writing PE sections into target process",
+            "relocation handling using IMAGE_BASE_RELOCATION entries",
+            "WriteProcessMemory updating target PEB ImageBaseAddress",
+            "SetThreadContext or Wow64SetThreadContext redirecting execution to replacement entry point",
+            "ResumeThread starting the hollowed process",
+            "absence of LoadLibraryA DLL injection",
+            "absence of CreateRemoteThread"
+        ],
+        "payload": [
+            "valid PE executable loaded from disk",
+            "PE headers and section table",
+            "entry point used as resumed thread destination",
+            "relocation table may be present depending on payload build"
+        ]
+    },
+    "expected_dynamic_signals": {
+        "hollower": [
+            "replacement executable opened and read from disk",
+            "target process created in suspended state",
+            "target process memory queried or read",
+            "remote memory allocation in target process",
+            "replacement PE headers written into target process",
+            "replacement PE sections written into target process",
+            "target PEB image base updated",
+            "primary thread context modified",
+            "suspended thread resumed"
+        ],
+        "target": [
+            "process image on disk differs from code executing in memory",
+            "target process begins execution at replacement PE entry point",
+            "payload behavior occurs under the target process identity",
+            "no payload DLL image load is required",
+            "no new remote thread is required"
+        ]
+    },
+    "semantic_meaning": "Replaces the executable image of a suspended process with a different PE image and resumes the original thread so the payload executes while appearing to originate from the target process.",
+    "control_notes": {
+        "benign_intent": true,
+        "network_required": false,
+        "persistence": false,
+        "credential_access": false,
+        "destructive_actions": false,
+        "payload_effect": "executes controlled replacement PE as benign execution marker",
+        "requires_architecture_match": true,
+        "requires_subsystem_match": true
+    },
+    "success_conditions": [
+        "A02_5_process_hollowing.exe reads A02_5_loaded_exe.exe successfully",
+        "replacement PE is validated as a valid executable image",
+        "target process is created with CREATE_SUSPENDED",
+        "source and target architectures are compatible",
+        "source and target subsystems are compatible",
+        "replacement PE headers are written into the target process",
+        "replacement PE sections are written into the target process",
+        "relocations are applied if required",
+        "target PEB image base is updated",
+        "target thread context is redirected to the replacement PE entry point",
+        "target process thread is resumed",
+        "A02_5_loaded_exe.exe behavior executes under the target process identity"
+    ]
+}

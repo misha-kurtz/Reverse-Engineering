@@ -1,0 +1,148 @@
+{
+    "sample_id": "A02_1",
+    "sample_name": "dll_injection_loadlibrary",
+    "dataset": "A",
+    "dataset_type": "controlled",
+    "behavior_class": "A02",
+    "behavior_class_name": "Controlled Injection Behavior Class",
+    "source_repository": "https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A02-Process-Inj-Hollowing-Code-Inj/A02_1",
+    "language": "C++",
+    "platform": "Windows",
+    "build_architecture": "x64",
+    "primary_behavior": "process_injection",
+    "technique": "dll_injection",
+    "subtechnique": "loadlibrary_remote_thread",
+    "execution_model": "loader_based",
+    "description": "Injects a benign DLL into a remote process by writing the DLL path into remote memory and starting a remote thread at LoadLibraryA.",
+    "components": {
+        "injector": {
+            "filename": "A02_1_dll_injector.exe",
+            "role": "performs cross-process memory write and remote thread creation",
+            "source_origin": "custom controlled implementation"
+        },
+        "target": {
+            "filename": "A02_1_target_process.exe",
+            "role": "benign lab target process with fixed window title",
+            "window_title": "A02_1_target_process"
+        },
+        "payload": {
+            "filename": "A02_1_marker.dll",
+            "role": "benign DLL loaded into target process via LoadLibraryA",
+            "payload_type": "benign_dll"
+        }
+    },
+    "key_apis": {
+        "injector": [
+            "FindWindowA",
+            "GetWindowThreadProcessId",
+            "OpenProcess",
+            "VirtualAllocEx",
+            "WriteProcessMemory",
+            "GetModuleHandleA",
+            "GetProcAddress",
+            "CreateRemoteThread",
+            "LoadLibraryA",
+            "WaitForSingleObject",
+            "GetExitCodeThread",
+            "VirtualFreeEx"
+        ],
+        "payload_dll": [
+            "DllMain",
+            "DisableThreadLibraryCalls",
+            "CreateThread",
+            "GetCurrentProcessId",
+            "GetModuleFileNameA",
+            "GetLocalTime",
+            "CreateFileA",
+            "WriteFile",
+            "CloseHandle",
+            "OutputDebugStringA"
+        ],
+        "target": [
+            "RegisterClassA",
+            "CreateWindowExA",
+            "ShowWindow",
+            "UpdateWindow",
+            "GetMessageA",
+            "TranslateMessage",
+            "DispatchMessageA",
+            "DefWindowProcA"
+        ]
+    },
+    "payload_behavior": {
+        "description": "When loaded into the target process, the DLL creates a marker file indicating successful execution in the target process context.",
+        "expected_actions": [
+            "create marker file",
+            "write timestamp, PID, and process path",
+            "emit debug string"
+        ],
+        "expected_output_file": "C:\\Users\\Public\\A02_1_Injected_OK.txt",
+        "marker_string": "THESIS_A02_1_DLL_LOADED"
+    },
+    "code_placement": "DLL path string written into remote process memory",
+    "execution_trigger": "Immediate execution via CreateRemoteThread",
+    "execution_target": "remote process identified by window title",
+    "expected_static_signals": {
+        "injector": [
+            "FindWindowA usage with target window title string",
+            "OpenProcess with PROCESS_ALL_ACCESS",
+            "VirtualAllocEx for remote DLL path storage",
+            "WriteProcessMemory writing DLL path into target process",
+            "GetProcAddress resolving LoadLibraryA from Kernel32.dll",
+            "CreateRemoteThread using LoadLibraryA as the thread start routine",
+            "hardcoded absolute DLL path string"
+        ],
+        "payload_dll": [
+            "DllMain with DLL_PROCESS_ATTACH handling",
+            "DisableThreadLibraryCalls usage",
+            "CreateThread call from DLL entry point",
+            "worker thread performs marker file creation",
+            "CreateFileA import",
+            "WriteFile import",
+            "CloseHandle import",
+            "OutputDebugStringA import",
+            "marker file path string",
+            "marker text string"
+        ],
+        "target": [
+            "fixed window class string",
+            "fixed window title string",
+            "standard Win32 message loop",
+            "minimal benign GUI process behavior"
+        ]
+    },
+    "expected_dynamic_signals": {
+        "injector": [
+            "target window lookup",
+            "process ID resolution from target window handle",
+            "handle open to remote process",
+            "remote memory allocation",
+            "DLL path written into target process memory",
+            "remote thread creation",
+            "remote thread exit code corresponding to LoadLibraryA result"
+        ],
+        "target": [
+            "A02_1_marker.dll loaded into A02_1_target_process.exe",
+            "worker thread created inside target process by payload DLL",
+            "marker file created from target process context",
+            "optional debug output generated by payload DLL"
+        ]
+    },
+    "semantic_meaning": "Loads an external DLL into another process using the operating system loader, causing the target process to execute benign injected code under its own process identity.",
+    "control_notes": {
+        "benign_intent": true,
+        "network_required": false,
+        "persistence": false,
+        "credential_access": false,
+        "destructive_actions": false,
+        "payload_effect": "creates marker file as benign execution marker"
+    },
+    
+    "success_conditions": [
+        "injector locates A02_1_target_process.exe by window title",
+        "remote thread successfully calls LoadLibraryA",
+        "A02_1_marker.dll is loaded into A02_1_target_process.exe",
+        "C:\\Users\\Public\\A02_1_Injected_OK.txt is created",
+        "marker file contains timestamp, PID, process path, and THESIS_A02_1_DLL_LOADED marker string"
+    ]
+}

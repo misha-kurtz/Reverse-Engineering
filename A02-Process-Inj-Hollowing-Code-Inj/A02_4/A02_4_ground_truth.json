@@ -1,0 +1,169 @@
+{
+    "sample_id": "A02_4",
+    "sample_name": "apc_dll_injection_loadlibrary",
+    "dataset": "A",
+    "dataset_type": "controlled",
+    "behavior_class": "A02",
+    "behavior_class_name": "Controlled Injection Behavior Class",
+    "source_repository": "https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A02-Process-Inj-Hollowing-Code-Inj/A02_4",
+    "language": "C# and C++",
+    "platform": "Windows",
+    "build_architecture": "x64",
+    "primary_behavior": "process_injection",
+    "technique": "apc_injection",
+    "subtechnique": "queueuserapc_loadlibrary",
+    "execution_model": "loader_based_apc_delivery",
+    "description": "Injects a benign DLL into a remote process by writing the DLL path into remote memory and queuing a user-mode APC that calls LoadLibraryA on one or more target threads. The target process includes an alertable thread that repeatedly enters SleepEx with alertable execution enabled.",
+    "components": {
+        "injector": {
+            "filename": "A02_4_APC_injector.exe",
+            "role": "finds the target process, writes the DLL path into remote memory, enumerates target threads, and queues a LoadLibraryA APC",
+            "source_origin": "custom controlled implementation",
+            "language": "C#"
+        },
+        "target": {
+            "filename": "A02_4_target_process.exe",
+            "role": "benign lab target process with a fixed window title and dedicated alertable APC thread",
+            "window_title": "A02_4_apc_target_process",
+            "language": "C++"
+        },
+        "payload": {
+            "filename": "A02_4_marker.dll",
+            "role": "benign DLL loaded into target process through APC-triggered LoadLibraryA execution",
+            "payload_type": "benign_dll",
+            "language": "C++"
+        }
+    },
+    "key_apis": {
+        "injector": [
+            "System.Diagnostics.Process.GetProcessesByName",
+            "OpenProcess",
+            "VirtualAllocEx",
+            "WriteProcessMemory",
+            "CreateToolhelp32Snapshot",
+            "Thread32First",
+            "Thread32Next",
+            "OpenThread",
+            "GetModuleHandle",
+            "GetProcAddress",
+            "QueueUserAPC",
+            "CloseHandle"
+        ],
+        "target": [
+            "CreateThread",
+            "SleepEx",
+            "OutputDebugStringA",
+            "RegisterClassA",
+            "CreateWindowExA",
+            "ShowWindow",
+            "UpdateWindow",
+            "GetMessageA",
+            "TranslateMessage",
+            "DispatchMessageA",
+            "DefWindowProcA"
+        ],
+        "payload_dll": [
+            "DllMain",
+            "DisableThreadLibraryCalls",
+            "CreateThread",
+            "GetCurrentProcessId",
+            "GetModuleFileNameA",
+            "GetLocalTime",
+            "CreateFileA",
+            "WriteFile",
+            "CloseHandle",
+            "OutputDebugStringA"
+        ]
+    },
+    "payload_behavior": {
+        "description": "When loaded into the target process by an APC-delivered LoadLibraryA call, the DLL creates a marker file indicating successful APC-based DLL injection.",
+        "expected_actions": [
+            "load marker DLL into target process",
+            "create worker thread from DLL_PROCESS_ATTACH",
+            "create marker file",
+            "write timestamp, PID, and process path",
+            "emit debug string"
+        ],
+        "expected_output_file": "C:\\Users\\Public\\A02_4_APC_Injection_OK.txt",
+        "marker_string": "THESIS_A02_4_DLL_LOADED_VIA_APC_INJECTION"
+    },
+    "code_placement": "DLL path string written into remote process memory",
+    "execution_trigger": "Queued user-mode APC calling LoadLibraryA when a target thread enters an alertable state",
+    "execution_target": "remote process identified by process image name, with APC delivery to target-owned threads",
+    "expected_static_signals": {
+        "injector": [
+            "C# P/Invoke declarations for kernel32.dll APIs",
+            "Process.GetProcessesByName target process lookup",
+            "OpenProcess with PROCESS_VM_WRITE and PROCESS_VM_OPERATION access",
+            "VirtualAllocEx allocating remote memory for DLL path",
+            "WriteProcessMemory writing DLL path into target process",
+            "CreateToolhelp32Snapshot with TH32CS_SNAPTHREAD",
+            "Thread32First and Thread32Next thread enumeration",
+            "OpenThread with SET_CONTEXT access",
+            "GetProcAddress resolving LoadLibraryA from kernel32",
+            "QueueUserAPC queuing LoadLibraryA to target threads",
+            "absence of CreateRemoteThread"
+        ],
+        "target": [
+            "dedicated alertable thread created with CreateThread",
+            "SleepEx called with alertable parameter set to TRUE",
+            "fixed window class string",
+            "fixed window title string",
+            "standard Win32 message loop",
+            "debug string indicating alertable APC thread startup"
+        ],
+        "payload_dll": [
+            "DllMain with DLL_PROCESS_ATTACH handling",
+            "DisableThreadLibraryCalls usage",
+            "CreateThread call from DLL entry point",
+            "worker thread performs marker file creation",
+            "CreateFileA import",
+            "WriteFile import",
+            "CloseHandle import",
+            "OutputDebugStringA import",
+            "marker file path string",
+            "marker text string"
+        ]
+    },
+    "expected_dynamic_signals": {
+        "injector": [
+            "target process discovered by process image name",
+            "handle open to remote process",
+            "remote memory allocation for DLL path",
+            "DLL path written into target process memory",
+            "system thread snapshot enumeration",
+            "target-owned threads opened with SET_CONTEXT access",
+            "APC queued to target thread using LoadLibraryA as APC routine",
+            "no remote thread is directly created by the injector"
+        ],
+        "target": [
+            "alertable thread repeatedly enters SleepEx alertable state",
+            "queued APC executes when alertable thread is scheduled",
+            "A02_4_marker.dll loaded into A02_4_target_process.exe",
+            "worker thread created inside target process by payload DLL",
+            "marker file created from target process context",
+            "optional debug output generated by target and payload DLL"
+        ]
+    },
+    "semantic_meaning": "Uses APC delivery to cause an existing target thread to call LoadLibraryA with a remotely written DLL path, loading a benign payload DLL into the target process without directly creating a remote thread.",
+    "control_notes": {
+        "benign_intent": true,
+        "network_required": false,
+        "persistence": false,
+        "credential_access": false,
+        "destructive_actions": false,
+        "payload_effect": "creates marker file as benign execution marker",
+        "requires_alertable_thread": true
+    },
+    "success_conditions": [
+        "injector finds A02_4_target_process.exe by process name",
+        "remote memory allocation for DLL path succeeds",
+        "A02_4_marker.dll path is written into target process memory",
+        "target process threads are enumerated",
+        "APC is queued with LoadLibraryA as the APC routine",
+        "target alertable thread enters SleepEx alertable state",
+        "A02_4_marker.dll is loaded into A02_4_target_process.exe",
+        "C:\\Users\\Public\\A02_4_APC_Injection_OK.txt is created",
+        "marker file contains timestamp, PID, process path, and THESIS_A02_4_DLL_LOADED_VIA_APC_INJECTION marker string"
+    ]
+}

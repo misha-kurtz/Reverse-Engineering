@@ -1,0 +1,149 @@
+{
+    "sample_id": "A02_3",
+    "sample_name": "local_thread_hijacking_shellcode",
+    "dataset": "A",
+    "dataset_type": "controlled",
+    "behavior_class": "A02",
+    "behavior_class_name": "Controlled Injection Behavior Class",
+    "source_repository": "https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A02-Process-Inj-Hollowing-Code-Inj/A02_3",
+    "language": "C",
+    "platform": "Windows",
+    "build_architecture": "x64",
+    "primary_behavior": "code_injection",
+    "technique": "thread_hijacking",
+    "subtechnique": "local_suspended_thread_context_hijack",
+    "execution_model": "direct_code_execution",
+    "description": "Creates a local suspended thread, allocates memory for embedded x64 shellcode, copies the shellcode into the local process, changes the buffer protection to executable, redirects the suspended thread RIP to the shellcode buffer, and resumes the thread to execute calc.exe.",
+    "components": {
+        "injector": {
+            "filename": "A02_3_thread_hijack.exe",
+            "role": "creates a suspended local thread, modifies its execution context, and redirects execution to embedded shellcode",
+            "source_origin": "custom controlled implementation"
+        },
+        "payload": {
+            "filename": "embedded_shellcode",
+            "role": "embedded x64 shellcode executed by hijacked local thread",
+            "payload_type": "custom_x64_winexec_calc_shellcode",
+            "payload_generation": "nasm -f win64 calc.asm -o calc.obj; objcopy -O binary calc.obj calc.bin; xxd -i calc.bin"
+        }
+    },
+    "key_apis": {
+        "injector": [
+            "CreateThread",
+            "GetThreadId",
+            "VirtualAlloc",
+            "RtlCopyMemory",
+            "VirtualProtect",
+            "GetThreadContext",
+            "SetThreadContext",
+            "ResumeThread",
+            "WaitForSingleObject",
+            "VirtualFree",
+            "CloseHandle",
+            "GetLastError"
+        ],
+        "payload": [
+            "PEB walking",
+            "kernel32.dll base resolution",
+            "export table walking",
+            "WinExec dynamic resolution",
+            "calc.exe execution",
+            "ret-based shellcode return"
+        ]
+    },
+    "payload_behavior": {
+        "description": "The embedded custom x64 shellcode walks the PEB to locate kernel32.dll, parses the export table to resolve WinExec, and launches calc.exe.",
+        "expected_actions": [
+            "execute injected shellcode from hijacked thread",
+            "locate kernel32.dll through PEB traversal",
+            "resolve WinExec through export table walking",
+            "launch calc.exe",
+            "return from shellcode"
+        ],
+        "payload_command": "calc.exe",
+        "payload_api_target": "WinExec"
+    },
+    "code_placement": "Raw shellcode bytes copied into local private process memory",
+    "execution_trigger": "ResumeThread after SetThreadContext redirects RIP to shellcode buffer",
+    "execution_target": "suspended local thread created inside the current process",
+    "expected_static_signals": {
+        "injector": [
+            "embedded unsigned char shellcode buffer",
+            "CreateThread called with CREATE_SUSPENDED",
+            "VirtualAlloc allocating local memory as PAGE_READWRITE",
+            "RtlCopyMemory copying shellcode into allocated buffer",
+            "VirtualProtect changing memory protection to PAGE_EXECUTE_READ",
+            "CONTEXT structure initialized with CONTEXT_ALL",
+            "GetThreadContext retrieves suspended thread context",
+            "SetThreadContext modifies thread RIP",
+            "ResumeThread starts execution from modified RIP",
+            "absence of OpenProcess, VirtualAllocEx, WriteProcessMemory, and CreateRemoteThread"
+        ],
+        "payload": [
+            "x64 shellcode bytes",
+            "PEB traversal using GS segment access",
+            "kernel32.dll discovery logic",
+            "manual PE export table parsing",
+            "WinExec string or little-endian WinExec constant",
+            "calc.exe string embedded in shellcode",
+            "stack-based argument setup for WinExec"
+        ]
+    },
+    "expected_dynamic_signals": {
+        "injector": [
+            "local suspended thread creation",
+            "local private memory allocation",
+            "shellcode copied into local memory",
+            "local memory protection changed from PAGE_READWRITE to PAGE_EXECUTE_READ",
+            "thread context read using GetThreadContext",
+            "thread instruction pointer redirected to shellcode buffer",
+            "thread resumed with ResumeThread"
+        ],
+        "process": [
+            "execution begins from private executable memory inside A02_3_thread_hijack.exe",
+            "calc.exe is spawned by A02_3_thread_hijack.exe",
+            "no remote process handle is required",
+            "no DLL payload is loaded",
+            "no cross-process WriteProcessMemory activity occurs"
+        ]
+    },
+    "expected_analysis_artifacts": {
+        "procmon": [
+            "A02_3_thread_hijack.exe creates calc.exe",
+            "no marker DLL image load associated with injection",
+            "no remote target process interaction required",
+            "no file artifact required for success"
+        ],
+        "sysmon": [
+            "process creation event for calc.exe if Event ID 1 is configured",
+            "parent process for calc.exe is A02_3_thread_hijack.exe",
+            "no process access event to a separate target process is expected",
+            "no image load event for an injected DLL payload is expected"
+        ],
+        "memory": [
+            "private local memory region containing custom shellcode",
+            "memory region transitions from PAGE_READWRITE to PAGE_EXECUTE_READ",
+            "hijacked thread RIP points to private executable memory",
+            "calc.exe and WinExec artifacts recoverable from shellcode bytes"
+        ]
+    },
+    "semantic_meaning": "Redirects execution of a suspended local thread by modifying its CPU context so that the thread begins executing shellcode from private executable memory instead of its original thread start routine.",
+    "control_notes": {
+        "benign_intent": true,
+        "network_required": false,
+        "persistence": false,
+        "credential_access": false,
+        "destructive_actions": false,
+        "payload_effect": "launches calc.exe as benign execution marker",
+        "cross_process_injection": false
+    },
+    "success_conditions": [
+        "suspended local thread is created successfully",
+        "local shellcode buffer is allocated and populated",
+        "shellcode buffer protection is changed to PAGE_EXECUTE_READ",
+        "GetThreadContext retrieves the suspended thread context",
+        "SetThreadContext redirects RIP to the shellcode buffer",
+        "ResumeThread starts the hijacked thread",
+        "calc.exe is launched"
+    ]
+}
