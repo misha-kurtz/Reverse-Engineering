@@ -8,6 +8,8 @@ From PowerShell:
 C:\Users\misha.kurtz\Reverse-Engineering\A02-Process-Inj-Hollowing-Code-Inj\A02_5\bin\A02_5_loaded_exe.exe \
 C:\Windows\System32\cmd.exe
 
+Note: target process must be command-line process (Notepad.exe does not work)
+
 1. Launcher runs
 2. Launcher creates suspended cmd.exe
 3. Payload image is mapped (A02_5_loaded_exe.exe)
