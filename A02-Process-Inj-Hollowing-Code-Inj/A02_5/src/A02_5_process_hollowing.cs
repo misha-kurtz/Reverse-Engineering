@@ -22,10 +22,11 @@ namespace RunPE
     {
         public static void Main(string[] args)
         {
-            string targetPath = Path.Combine(
+            /*string targetPath = Path.Combine(
                 RuntimeEnvironment.GetRuntimeDirectory(),
                 "RegAsm.exe"
-            );
+            );*/
+            string targetPath = @"C:\Windows\Notepad.exe";
             string payloadPath = @"C:\Users\misha.kurtz\Reverse-Engineering\A02-Process-Inj-Hollowing-Code-Inj\A02_5\bin\A02_5_loaded_exe.exe";
 
             if (!File.Exists(payloadPath))
@@ -41,7 +42,6 @@ namespace RunPE
             Console.WriteLine("[A02_5] Done.");
         }
     }
-
 
     public static class RunPE
     {
