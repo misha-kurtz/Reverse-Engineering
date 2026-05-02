@@ -79,3 +79,6 @@
 [submodule "A01-Ransomware-Cryptor/A01_3_CherryRuby"]
 	path = A01-Ransomware-Cryptor/A01_3_CherryRuby
 	url = https://github.com/somby0x55/CherryRuby
+[submodule "A02-Process-Inj-Hollowing-Code-Inj/A02_5_Process_Hollowing"]
+	path = A02-Process-Inj-Hollowing-Code-Inj/A02_5_Process_Hollowing
+	url = https://github.com/adamhlt/Process-Hollowing
