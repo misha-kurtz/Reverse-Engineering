@@ -15,5 +15,7 @@ objcopy -O binary calc.obj calc.bin
 // Convert the binary to shellcode
 xxd -i calc.bin
 
+Execute A02_3_thread_hijack.exe from command-line with no arguments
+.\A02-Process-Inj-Hollowing-Code-Inj\A02_3\bin\A02_3_thread_hijack.exe
 
-A02_3_thread_hijack.c
+
