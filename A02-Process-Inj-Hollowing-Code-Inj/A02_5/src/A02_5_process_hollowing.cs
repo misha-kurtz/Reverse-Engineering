@@ -158,8 +158,7 @@ namespace RunPE
                     int imageBase = BitConverter.ToInt32(payload, fileAddress + 0x34);
 
                     int[] context = new int[0xB3];
-                    //context[0x0] = 0x10002;
-                    context[0x0] = 0x10007; // CONTEXT_FULL for x86
+                    context[0x0] = 0x10002;
 
                     if (!GetThreadContext(pi.ThreadHandle, context))
                         throw new Exception($"GetThreadContext failed. LastError={Marshal.GetLastWin32Error()}");
