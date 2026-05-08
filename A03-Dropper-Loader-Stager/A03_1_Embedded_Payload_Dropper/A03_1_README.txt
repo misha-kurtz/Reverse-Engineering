@@ -1,9 +1,25 @@
-Execute A03_1_embedded_payload_dropper.exe:
+A03_1 Embedded Payload Dropper
+
+Summary
+Extracts an embedded executable payload from the dropper binary, 
+writes the payload to disk, and launches it as a separate process. 
+This demonstrates staged malware delivery behavior in which a 
+primary executable acts as a carrier for a secondary payload.
+
+Payload Summary
+The embedded payload is a C byte-array representation of the legitimate 
+Windows executable C:\Windows\System32\calc.exe. The payload is 
+reconstructed from the embedded C byte array at runtime, written to 
+disk as a standalone executable, and executed to provide a controlled 
+and observable proof that payload extraction and execution succeeded.
+
+
+To execute A03_1_embedded_payload_dropper.exe:
 .\A03-Dropper-Loader-Stager\A03_1_Embedded_Payload_Dropper\bin\A03_1_embedded_payload_dropper.exe
 
 #####################################################################################################
 
-Convert C:\Windows\System32\calc.exe to C byte array:
+To convert C:\Windows\System32\calc.exe to C byte array:
 
 From Linux terminal:
 
