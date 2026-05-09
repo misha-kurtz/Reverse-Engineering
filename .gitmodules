@@ -1,12 +1,3 @@
-[submodule "A01-Ransomware-Cryptor/A01_1_0xj0hn_Ransomware"]
-	path = A01-Ransomware-Cryptor/A01_1_0xj0hn_Ransomware
-	url = https://github.com/0xj0hn/ransomware
-[submodule "A01-Ransomware-Cryptor/A01_2_Hidden_Tear"]
-	path = A01-Ransomware-Cryptor/A01_2_Hidden_Tear
-	url = https://github.com/misha-kurtz/hidden-tear
-[submodule "A01-Ransomware-Cryptor/A01_4_EDA2"]
-	path = A01-Ransomware-Cryptor/A01_4_EDA2
-	url = https://github.com/misha-kurtz/eda2
 [submodule "A04-Cred-Theft-Spyware-Keylogger/Hookbased-Keylogger"]
 	path = A04-Cred-Theft-Spyware-Keylogger/Hookbased-Keylogger
 	url = https://github.com/NYAN-x-CAT/LimeLogger
@@ -58,7 +49,4 @@
 [submodule "A06-Backdoor-Persistence-Service-Foothold/A06_2_Service_based_Foothold"]
 	path = A06-Backdoor-Persistence-Service-Foothold/A06_2_Service_based_Foothold
 	url = https://github.com/securedglobe/PersistantService
-[submodule "A01-Ransomware-Cryptor/A01_3_CherryRuby"]
-	path = A01-Ransomware-Cryptor/A01_3_CherryRuby
-	url = https://github.com/somby0x55/CherryRuby
 
