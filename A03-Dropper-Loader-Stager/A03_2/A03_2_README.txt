@@ -17,3 +17,19 @@ second-stage executable ran successfully.
 
 To execute A03_2_download_and_execute_stager.exe:
 .\A03-Dropper-Loader-Stager\A03_2_Download_and_Exe_Stager\bin\A03_2_download_and_execute_stager.exe
+
+
+#########################################################################
+
+Host payload from Ubuntu Inetsim server
+
+sudo cp A03_2_dropped_exe.exe /var/lib/inetsim/http/fakefiles/A03_2_dropped_exe.exe
+sudo chown inetsim:inetsim /var/lib/inetsim/http/fakefiles/A03_2_dropped_exe.exe
+
+Add fakefile mapping to:
+/etc/inetsim/inetsim.conf
+
+http_fakefile exe A03_2_dropped_exe.exe application/octet-stream
+
+Restart inetsim:
+sudo systemctl restart inetsim
