@@ -2,7 +2,7 @@ using System;
 using System.Net;
 using System.Threading;
 
-namespace BenignBeaconer
+namespace A05_1_http_beacon
 {
     class Program
     {
