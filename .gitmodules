@@ -1,6 +1,3 @@
-[submodule "A01-Ransomware-Cryptor/A01_3_Stockholm"]
-	path = A01-Ransomware-Cryptor/A01_3_Stockholm
-	url = https://github.com/R4mnesia/Stockholm
 [submodule "A01-Ransomware-Cryptor/A01_1_0xj0hn_Ransomware"]
 	path = A01-Ransomware-Cryptor/A01_1_0xj0hn_Ransomware
 	url = https://github.com/0xj0hn/ransomware
@@ -10,21 +7,6 @@
 [submodule "A01-Ransomware-Cryptor/A01_4_EDA2"]
 	path = A01-Ransomware-Cryptor/A01_4_EDA2
 	url = https://github.com/misha-kurtz/eda2
-[submodule "A02-Process-Inj-Hollowing-Code-Inj/A02_2_Remote-Thread-Injection"]
-	path = A02-Process-Inj-Hollowing-Code-Inj/A02_2_Remote-Thread-Injection
-	url = https://github.com/daemon104/Simple-Code-Injection
-[submodule "A02-Process-Inj-Hollowing-Code-Inj/A02_3_Thread_Hijacking"]
-	path = A02-Process-Inj-Hollowing-Code-Inj/A02_3_Thread_Hijacking
-	url = https://github.com/BiLLY-J03l/Local-Thread-Hijacking-C
-[submodule "A02-Process-Inj-Hollowing-Code-Inj/A02_4_APC_Injection"]
-	path = A02-Process-Inj-Hollowing-Code-Inj/A02_4_APC_Injection
-	url = https://github.com/nap32/APC_Injection
-[submodule "A02-Process-Inj-Hollowing-Code-Inj/A02_1_Simple_DLL_Injection"]
-	path = A02-Process-Inj-Hollowing-Code-Inj/A02_1_Simple_DLL_Injection
-	url = https://github.com/IDouble/Simple-DLL-Injection
-[submodule "A03-Dropper-Loader-Stager/A03_5_Network_to_Mem_Loader"]
-	path = A03-Dropper-Loader-Stager/A03_5_Network_to_Mem_Loader
-	url = https://github.com/kleiton0x00/RemoteShellcodeExec
 [submodule "A04-Cred-Theft-Spyware-Keylogger/Hookbased-Keylogger"]
 	path = A04-Cred-Theft-Spyware-Keylogger/Hookbased-Keylogger
 	url = https://github.com/NYAN-x-CAT/LimeLogger
@@ -79,6 +61,4 @@
 [submodule "A01-Ransomware-Cryptor/A01_3_CherryRuby"]
 	path = A01-Ransomware-Cryptor/A01_3_CherryRuby
 	url = https://github.com/somby0x55/CherryRuby
-[submodule "A02-Process-Inj-Hollowing-Code-Inj/A02_5_Process_Hollowing"]
-	path = A02-Process-Inj-Hollowing-Code-Inj/A02_5_Process_Hollowing
-	url = https://github.com/adamhlt/Process-Hollowing
+
