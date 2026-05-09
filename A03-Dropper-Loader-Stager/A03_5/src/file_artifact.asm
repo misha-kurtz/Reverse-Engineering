@@ -33,7 +33,7 @@ _start:
 
     ; allocate local stack space
     ; includes shadow space + buffers
-    sub rsp, 2048
+    sub rsp, 2056
 
     ; keep PARAMS* in RBX
     mov rbx, rcx
@@ -178,7 +178,7 @@ _start:
     call qword [rbx + 0x40]
 
 .done:
-    add rsp, 2048
+    add rsp, 2056
 
     pop r15
     pop r14
