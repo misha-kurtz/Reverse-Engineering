@@ -14,7 +14,7 @@ byte array, copied into dynamically allocated memory,
 and executed from that memory region.
 
 To execute A03_3_in_mem_shellcode_loader.exe:
-.\A03-Dropper-Loader-Stager\A03_3_In_Mem_Fileless_Loader\bin\A03_3_in_mem_shellcode_loader.exe
+.\A03-Dropper-Loader-Stager\A03_3\bin\A03_3_in_mem_shellcode_loader.exe
 
 #########################################################################
 calc.asm high-level payload flow:

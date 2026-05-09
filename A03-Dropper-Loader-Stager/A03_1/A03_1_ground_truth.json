@@ -1,0 +1,108 @@
+{
+    "sample_id": "A03_1",
+    "sample_name": "embedded_payload_dropper",
+    "dataset": "A",
+    "dataset_type": "controlled",
+    "behavior_class": "A03",
+    "behavior_class_name": "Dropper Loader Stager Behavior Class",
+    "source_repository": "https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A03-Dropper-Loader-Stager/A03_1",
+    "language": "C++",
+    "platform": "Windows",
+    "build_architecture": "x64",
+    "primary_behavior": "dropper",
+    "technique": "embedded_payload_dropper",
+    "subtechnique": "embedded_executable_to_disk",
+    "execution_model": "drop_and_execute",
+    "description": "Extracts an embedded executable payload from a large C byte array, writes it to disk as payload.exe, and launches it as a separate process.",
+    "components": {
+        "dropper": {
+            "filename": "A03_1_embedded_payload_dropper.exe",
+            "role": "contains embedded executable bytes, reconstructs the payload on disk, and starts the dropped executable",
+            "source_origin": "custom controlled implementation"
+        },
+        "payload": {
+            "filename": "payload.exe",
+            "role": "dropped executable payload launched by the dropper",
+            "payload_type": "legitimate_windows_calc_exe",
+            "payload_generation": "C byte-array representation of C:\\Windows\\System32\\calc.exe"
+        }
+    },
+    "key_apis": {
+        "dropper": [
+            "CreateFileA",
+            "WriteFile",
+            "CloseHandle",
+            "CreateProcessA",
+            "GetLastError"
+        ],
+        "payload": [
+            "standard Windows PE execution",
+            "calc.exe process startup behavior"
+        ]
+    },
+    "payload_behavior": {
+        "description": "The embedded payload is reconstructed as payload.exe on disk and executed as a standalone process.",
+        "expected_actions": [
+            "write embedded PE bytes to disk",
+            "create payload.exe",
+            "launch payload.exe",
+            "spawn calc.exe-equivalent payload process"
+        ],
+        "payload_output_path": "payload.exe",
+        "payload_command": "payload.exe"
+    },
+    "code_placement": "Complete executable payload stored as a static unsigned char byte array inside the dropper",
+    "execution_trigger": "Immediate execution via CreateProcessA after successful file write",
+    "execution_target": "new local process created from dropped payload.exe",
+    "expected_static_signals": {
+        "dropper": [
+            "large embedded unsigned char payload buffer",
+            "MZ and PE header bytes visible inside the embedded payload",
+            "DOS stub string from embedded PE payload",
+            "payload.exe output filename string",
+            "CreateFileA used with CREATE_ALWAYS",
+            "WriteFile used to write embedded bytes to disk",
+            "CreateProcessA used to launch dropped executable",
+            "absence of network download logic",
+            "absence of in-memory execution APIs such as VirtualAlloc or CreateThread"
+        ],
+        "payload": [
+            "valid Windows PE structure embedded inside parent binary",
+            "calc.exe-derived PE sections and imports",
+            "benign calculator executable behavior"
+        ]
+    },
+    "expected_dynamic_signals": {
+        "dropper": [
+            "creates payload.exe in the current working directory",
+            "writes embedded payload bytes to payload.exe",
+            "closes file handle after write completion",
+            "creates a new process from payload.exe",
+            "prints dropped byte count and child process PID to console"
+        ],
+        "payload": [
+            "payload.exe starts as a child process of the dropper",
+            "calculator payload behavior is observed",
+            "no remote process injection occurs",
+            "no network connection is required"
+        ]
+    },
+    "semantic_meaning": "Demonstrates a classic embedded-payload dropper pattern in which a carrier executable stores a complete secondary PE file internally, reconstructs it on disk, and executes it as a separate process.",
+    "control_notes": {
+        "benign_intent": true,
+        "network_required": false,
+        "persistence": false,
+        "credential_access": false,
+        "destructive_actions": false,
+        "payload_effect": "drops and launches a benign calc.exe-derived executable as an execution marker"
+    },
+    "success_conditions": [
+        "dropper starts successfully",
+        "payload.exe is created in the current working directory",
+        "embedded payload bytes are written to disk",
+        "file handle is closed cleanly",
+        "CreateProcessA successfully starts payload.exe",
+        "child process PID is printed",
+        "calculator payload execution is observed"
+    ]
+}

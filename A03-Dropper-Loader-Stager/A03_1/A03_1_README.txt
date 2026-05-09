@@ -15,7 +15,7 @@ and observable proof that payload extraction and execution succeeded.
 
 
 To execute A03_1_embedded_payload_dropper.exe:
-.\A03-Dropper-Loader-Stager\A03_1_Embedded_Payload_Dropper\bin\A03_1_embedded_payload_dropper.exe
+.\A03-Dropper-Loader-Stager\A03_1\bin\A03_1_embedded_payload_dropper.exe
 
 #####################################################################################################
 

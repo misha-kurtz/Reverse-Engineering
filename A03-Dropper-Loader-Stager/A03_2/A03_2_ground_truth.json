@@ -1,0 +1,152 @@
+{
+    "sample_id": "A03_2",
+    "sample_name": "download_and_execute_stager",
+    "dataset": "A",
+    "dataset_type": "controlled",
+    "behavior_class": "A03",
+    "behavior_class_name": "Dropper Loader Stager Behavior Class",
+    "source_repository": "https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A03-Dropper-Loader-Stager/A03_2_Download_and_Exe_Stager",
+    "language": "C++",
+    "platform": "Windows",
+    "build_architecture": "x64",
+    "primary_behavior": "stager",
+    "technique": "network_download_and_execute",
+    "subtechnique": "http_executable_download_to_disk",
+    "execution_model": "download_drop_and_execute",
+    "description": "Downloads a second-stage executable payload from a controlled HTTP server using WinHTTP, writes the response body to disk, and launches the downloaded executable as a new local process.",
+    "components": {
+        "stager": {
+            "filename": "A03_2_download_and_execute_stager.exe",
+            "role": "performs HTTP retrieval, writes downloaded payload bytes to disk, and starts the downloaded executable",
+            "source_origin": "custom controlled implementation"
+        },
+        "payload": {
+            "filename": "A03_2_dropped_exe.exe",
+            "role": "benign second-stage marker executable downloaded and executed by the stager",
+            "payload_type": "custom_marker_executable",
+            "payload_generation": "custom C++ executable that writes a marker file after execution"
+        }
+    },
+    "key_apis": {
+        "stager": [
+            "CreateFileA",
+            "WinHttpOpen",
+            "WinHttpConnect",
+            "WinHttpOpenRequest",
+            "WinHttpSendRequest",
+            "WinHttpReceiveResponse",
+            "WinHttpReadData",
+            "WriteFile",
+            "CloseHandle",
+            "CreateProcessA",
+            "WinHttpCloseHandle",
+            "GetLastError"
+        ],
+        "payload": [
+            "GetModuleFileNameA",
+            "GetLocalTime",
+            "GetCurrentProcessId",
+            "CreateFileA",
+            "WriteFile",
+            "CloseHandle",
+            "OutputDebugStringA"
+        ]
+    },
+    "network_behavior": {
+        "protocol": "HTTP",
+        "method": "GET",
+        "server": "192.168.67.5",
+        "port": 80,
+        "resource_path": "/A03_2_dropped_exe.exe",
+        "user_agent": "A03_2_WinHTTP/1.0",
+        "controlled_lab_target": true
+    },
+    "payload_behavior": {
+        "description": "The downloaded payload executes as a standalone process and writes a benign marker file proving that network delivery and execution succeeded.",
+        "expected_actions": [
+            "execute downloaded second-stage payload",
+            "collect current process path",
+            "collect local timestamp",
+            "collect current process ID",
+            "write marker file to C:\\Users\\Public\\A03_2_Network_Stager_OK.txt",
+            "emit debug string marker"
+        ],
+        "payload_output_path": "C:\\Users\\Public\\A03_2_dropped_exe.exe",
+        "marker_file": "C:\\Users\\Public\\A03_2_Network_Stager_OK.txt",
+        "marker_string": "THESIS_A03_2_EXE_DROPPED_AND_EXECUTED_VIA_NETWORK_STAGER"
+    },
+    "code_placement": "Second-stage executable is not embedded in the stager; it is retrieved over HTTP at runtime and written to disk",
+    "execution_trigger": "Immediate execution via CreateProcessA after successful download and file write",
+    "execution_target": "new local process created from C:\\Users\\Public\\A03_2_dropped_exe.exe",
+    "expected_static_signals": {
+        "stager": [
+            "WinHTTP import usage",
+            "hardcoded user agent string A03_2_WinHTTP/1.0",
+            "hardcoded server IP 192.168.67.5",
+            "hardcoded HTTP resource path /A03_2_dropped_exe.exe",
+            "hardcoded output path C:\\Users\\Public\\A03_2_dropped_exe.exe",
+            "CreateFileA used with CREATE_ALWAYS",
+            "WinHttpOpen to initialize HTTP session",
+            "WinHttpConnect to controlled lab server",
+            "WinHttpOpenRequest using GET",
+            "WinHttpSendRequest and WinHttpReceiveResponse sequence",
+            "WinHttpReadData loop using 4096-byte buffer",
+            "WriteFile used to persist downloaded bytes",
+            "CreateProcessA used to launch downloaded executable",
+            "absence of embedded payload byte array",
+            "absence of in-memory payload execution APIs such as VirtualAlloc or CreateThread"
+        ],
+        "payload": [
+            "marker string THESIS_A03_2_EXE_DROPPED_AND_EXECUTED_VIA_NETWORK_STAGER",
+            "hardcoded marker path C:\\Users\\Public\\A03_2_Network_Stager_OK.txt",
+            "GetModuleFileNameA used to record process path",
+            "GetLocalTime used to record execution timestamp",
+            "GetCurrentProcessId used to record payload PID",
+            "CreateFileA and WriteFile used to create marker artifact",
+            "OutputDebugStringA marker emission"
+        ]
+    },
+    "expected_dynamic_signals": {
+        "stager": [
+            "creates C:\\Users\\Public\\A03_2_dropped_exe.exe",
+            "opens WinHTTP session",
+            "connects to 192.168.67.5 over TCP port 80",
+            "sends HTTP GET request for /A03_2_dropped_exe.exe",
+            "receives HTTP response body",
+            "writes downloaded response data to disk",
+            "closes output file handle",
+            "starts downloaded executable with CreateProcessA"
+        ],
+        "payload": [
+            "A03_2_dropped_exe.exe executes as a child process of the stager",
+            "creates C:\\Users\\Public\\A03_2_Network_Stager_OK.txt",
+            "marker file contains timestamp, PID, and process path",
+            "debug string marker is emitted",
+            "payload exits after marker creation"
+        ],
+        "network": [
+            "HTTP connection to controlled INetSim or lab HTTP server at 192.168.67.5",
+            "GET request for /A03_2_dropped_exe.exe",
+            "downloaded executable bytes transferred over port 80"
+        ]
+    },
+    "semantic_meaning": "Demonstrates a network-based executable stager pattern in which the initial program does not carry the payload internally, but retrieves a second-stage PE file over HTTP, writes it to disk, and executes it as a separate local process.",
+    "control_notes": {
+        "benign_intent": true,
+        "network_required": true,
+        "persistence": false,
+        "credential_access": false,
+        "destructive_actions": false,
+        "payload_effect": "creates a benign marker file confirming that the downloaded second-stage executable ran successfully",
+        "controlled_server": "192.168.67.5"
+    },
+    "success_conditions": [
+        "controlled HTTP server is reachable at 192.168.67.5:80",
+        "GET request for /A03_2_dropped_exe.exe succeeds",
+        "downloaded bytes are written to C:\\Users\\Public\\A03_2_dropped_exe.exe",
+        "output file handle is closed cleanly",
+        "CreateProcessA successfully launches C:\\Users\\Public\\A03_2_dropped_exe.exe",
+        "payload creates C:\\Users\\Public\\A03_2_Network_Stager_OK.txt",
+        "marker file contains timestamp, PID, and process path"
+    ]
+}

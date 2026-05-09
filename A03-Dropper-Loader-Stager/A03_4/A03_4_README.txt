@@ -16,6 +16,9 @@ routine originally authored in x64 assembly (calc.asm). Prior
 to embedding, the raw shellcode bytes are XOR-obfuscated using 
 key 0x5A and Base64-encoded. 
 
+To execute A03_4_obfuscated_loader.exe:
+.\A03-Dropper-Loader-Stager\A03_4\bin\A03_4_obfuscated_loader.exe
+
 #########################################################################
 calc.asm high-level payload flow:
 1. Locate the Process Environment Block (PEB)

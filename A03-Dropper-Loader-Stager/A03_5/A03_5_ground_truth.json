@@ -1,0 +1,201 @@
+{
+    "sample_id": "A03_5",
+    "sample_name": "network_to_mem_loader",
+    "dataset": "A",
+    "dataset_type": "controlled",
+    "behavior_class": "A03",
+    "behavior_class_name": "Dropper Loader Stager Behavior Class",
+    "source_repository": "https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A03-Dropper-Loader-Stager/A03_5",
+    "language": "C++ / x64 Assembly",
+    "platform": "Windows",
+    "build_architecture": "x64",
+    "primary_behavior": "loader",
+    "technique": "network_to_memory_payload_execution",
+    "subtechnique": "http_raw_payload_download_to_memory",
+    "execution_model": "fileless_network_staged_code_execution",
+    "description": "Downloads a raw binary payload from a controlled HTTP server using WinHTTP, stages the downloaded bytes into local process memory, changes the memory region from writable to executable, and transfers execution directly to the downloaded payload through a function pointer call.",
+    "components": {
+        "loader": {
+            "filename": "A03_5_network_to_mem_loader.exe",
+            "role": "downloads a raw payload over HTTP, allocates local memory, copies the payload into memory, changes memory protections, resolves WinAPI function pointers, builds a parameter structure, and calls the downloaded payload directly",
+            "source_origin": "custom controlled implementation"
+        },
+        "payload": {
+            "filename": "file_artifact.bin",
+            "role": "raw position-independent memory payload downloaded over HTTP and executed directly from memory",
+            "payload_type": "custom_x64_file_artifact_memory_payload",
+            "payload_generation": "nasm -f bin file_artifact.asm -o file_artifact.bin"
+        },
+        "payload_source": {
+            "filename": "file_artifact.asm",
+            "role": "NASM x64 source for the callable in-memory payload that writes the execution marker artifact",
+            "source_origin": "custom controlled implementation"
+        }
+    },
+    "key_apis": {
+        "loader": [
+            "WinHttpOpen",
+            "WinHttpConnect",
+            "WinHttpOpenRequest",
+            "WinHttpSendRequest",
+            "WinHttpReceiveResponse",
+            "WinHttpReadData",
+            "WinHttpCloseHandle",
+            "VirtualAlloc",
+            "VirtualProtect",
+            "VirtualFree",
+            "GetModuleHandleA",
+            "GetProcAddress",
+            "GetLastError"
+        ],
+        "payload": [
+            "callable position-independent x64 payload",
+            "CreateFileA",
+            "WriteFile",
+            "CloseHandle",
+            "GetCurrentProcessId",
+            "GetModuleFileNameA",
+            "GetLocalTime",
+            "wsprintfA",
+            "OutputDebugStringA"
+        ]
+    },
+    "network_behavior": {
+        "protocol": "HTTP",
+        "method": "GET",
+        "server": "controlled lab HTTP server",
+        "payload_resource": "file_artifact.bin",
+        "controlled_lab_target": true,
+        "payload_staged_to_disk": false
+    },
+    "loader_parameter_passing": {
+        "parameter_structure": "PARAMS",
+        "calling_convention": "Windows x64 calling convention",
+        "payload_entry_argument": "RCX receives PARAMS*",
+        "supplied_function_pointers": [
+            "pBaseAddress",
+            "pCreateFileA",
+            "pWriteFile",
+            "pCloseHandle",
+            "pGetCurrentProcessId",
+            "pGetModuleFileNameA",
+            "pGetLocalTime",
+            "pWsprintfA",
+            "pOutputDebugStringA"
+        ]
+    },
+    "payload_behavior": {
+        "description": "The downloaded payload receives a PARAMS structure containing resolved API pointers, collects execution metadata, formats it into a buffer, writes a marker file, emits a debug string, and returns to the loader.",
+        "expected_actions": [
+            "receive PARAMS pointer from loader",
+            "call GetCurrentProcessId through supplied function pointer",
+            "call GetLocalTime through supplied function pointer",
+            "call GetModuleFileNameA through supplied function pointer",
+            "format timestamp, PID, process path, and execution mode using wsprintfA",
+            "create marker file using CreateFileA",
+            "write execution metadata using WriteFile",
+            "close marker file handle using CloseHandle",
+            "emit debug marker using OutputDebugStringA",
+            "return to caller"
+        ],
+        "marker_file": "C:\\Users\\Public\\A03_5_IN_MEMORY_PAYLOAD_EXECUTED.txt",
+        "marker_string": "THESIS_A03_5_NETWORK_TO_MEMORY_PAYLOAD_EXECUTED",
+        "execution_mode": "downloaded_to_memory_and_called_as_raw_payload",
+        "payload_staged_to_disk": false
+    },
+    "code_placement": "Raw payload bytes are downloaded over HTTP and copied into private memory inside the current process without writing the payload itself to disk",
+    "execution_trigger": "Direct function pointer call into the downloaded executable memory region",
+    "execution_target": "current process local memory region containing downloaded raw payload",
+    "expected_static_signals": {
+        "loader": [
+            "WinHTTP import usage",
+            "WinHttpOpen to initialize HTTP session",
+            "WinHttpConnect to controlled lab server",
+            "WinHttpOpenRequest using GET",
+            "WinHttpSendRequest and WinHttpReceiveResponse sequence",
+            "WinHttpReadData loop used to retrieve raw payload bytes",
+            "VirtualAlloc allocating local writable memory",
+            "payload bytes copied into allocated local memory",
+            "VirtualProtect changing memory protection to PAGE_EXECUTE_READ",
+            "GetModuleHandleA and GetProcAddress used to resolve API pointers for payload",
+            "parameter structure containing WinAPI function pointers",
+            "direct function pointer call into allocated memory",
+            "absence of CreateProcessA payload execution",
+            "absence of CreateFileA or WriteFile usage for staging the downloaded payload to disk",
+            "absence of embedded shellcode byte array",
+            "absence of remote process injection APIs such as OpenProcess, VirtualAllocEx, WriteProcessMemory, or CreateRemoteThread"
+        ],
+        "payload": [
+            "raw flat binary generated from NASM source",
+            "callable payload expecting PARAMS* in RCX",
+            "function pointer calls through PARAMS offsets",
+            "CreateFileA pointer read from PARAMS + 0x08",
+            "WriteFile pointer read from PARAMS + 0x10",
+            "CloseHandle pointer read from PARAMS + 0x18",
+            "GetCurrentProcessId pointer read from PARAMS + 0x20",
+            "GetModuleFileNameA pointer read from PARAMS + 0x28",
+            "GetLocalTime pointer read from PARAMS + 0x30",
+            "wsprintfA pointer read from PARAMS + 0x38",
+            "OutputDebugStringA pointer read from PARAMS + 0x40",
+            "hardcoded marker path C:\\Users\\Public\\A03_5_IN_MEMORY_PAYLOAD_EXECUTED.txt",
+            "marker string THESIS_A03_5_NETWORK_TO_MEMORY_PAYLOAD_EXECUTED",
+            "PayloadStagedToDisk: false string"
+        ]
+    },
+    "expected_dynamic_signals": {
+        "loader": [
+            "opens WinHTTP session",
+            "connects to controlled HTTP server",
+            "sends HTTP GET request for raw payload binary",
+            "receives raw payload bytes over HTTP",
+            "allocates private PAGE_READWRITE memory in the current process",
+            "copies downloaded payload bytes into allocated memory",
+            "changes allocated memory protection to PAGE_EXECUTE_READ",
+            "resolves required WinAPI function pointers",
+            "passes PARAMS structure pointer to downloaded payload",
+            "transfers execution directly into downloaded memory buffer"
+        ],
+        "payload": [
+            "payload executes from private memory inside the loader process",
+            "payload retrieves current process ID",
+            "payload retrieves current process image path",
+            "payload retrieves local timestamp",
+            "payload creates C:\\Users\\Public\\A03_5_IN_MEMORY_PAYLOAD_EXECUTED.txt",
+            "payload writes execution metadata to marker file",
+            "payload emits debug string marker",
+            "payload returns to loader after execution"
+        ],
+        "process": [
+            "no child payload process is created",
+            "no downloaded payload executable is written to disk",
+            "marker file is created by the loader process context",
+            "execution remains inside A03_5_network_to_mem_loader.exe"
+        ],
+        "network": [
+            "HTTP connection to controlled lab server",
+            "GET request for file_artifact.bin or configured raw payload resource",
+            "raw flat binary payload transferred over HTTP"
+        ]
+    },
+    "semantic_meaning": "Demonstrates a fileless network-to-memory loader pattern in which a raw payload is retrieved from a remote HTTP server, staged only in volatile process memory, provided with runtime-resolved API pointers, and executed directly without writing the downloaded payload to disk or spawning a second-stage process.",
+    "control_notes": {
+        "benign_intent": true,
+        "network_required": true,
+        "persistence": false,
+        "credential_access": false,
+        "destructive_actions": false,
+        "payload_effect": "creates a benign marker file confirming that the downloaded in-memory payload executed successfully",
+        "payload_staged_to_disk": false
+    },
+    "success_conditions": [
+        "controlled HTTP server is reachable",
+        "raw file_artifact.bin payload is downloaded successfully",
+        "payload bytes are staged into local process memory",
+        "VirtualProtect successfully changes memory protection to PAGE_EXECUTE_READ",
+        "required WinAPI function pointers are resolved",
+        "PARAMS structure is passed to the payload",
+        "execution transfers to the downloaded memory buffer",
+        "payload creates C:\\Users\\Public\\A03_5_IN_MEMORY_PAYLOAD_EXECUTED.txt",
+        "marker file contains timestamp, PID, process path, execution mode, and PayloadStagedToDisk: false"
+    ]
+}

@@ -1,0 +1,157 @@
+{
+    "sample_id": "A03_4",
+    "sample_name": "obfuscated_loader",
+    "dataset": "A",
+    "dataset_type": "controlled",
+    "behavior_class": "A03",
+    "behavior_class_name": "Dropper Loader Stager Behavior Class",
+    "source_repository": "https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A03-Dropper-Loader-Stager/A03_4",
+    "language": "C# / x64 Assembly",
+    "platform": "Windows",
+    "build_architecture": "x64",
+    "primary_behavior": "loader",
+    "technique": "obfuscated_in_memory_shellcode_execution",
+    "subtechnique": "base64_xor_embedded_shellcode_local_thread",
+    "execution_model": "fileless_local_code_execution",
+    "description": "Decodes an embedded Base64-encoded and XOR-obfuscated shellcode payload in memory, allocates local process memory, copies the decoded shellcode into the allocated region, changes the region to executable, and starts a local thread at the decoded payload address.",
+    "components": {
+        "loader": {
+            "filename": "A03_4_obfuscated_loader.exe",
+            "role": "decodes the embedded payload, allocates local memory, stages the decoded shellcode, changes memory protection, and launches execution through a new local thread",
+            "source_origin": "custom controlled implementation"
+        },
+        "payload": {
+            "filename": "embedded_obfuscated_shellcode",
+            "role": "Base64-encoded and XOR-obfuscated x64 shellcode executed from local process memory after runtime decoding",
+            "payload_type": "custom_x64_winexec_calc_shellcode",
+            "payload_generation": "nasm -f win64 calc.asm -o calc.obj; objcopy -O binary calc.obj calc.bin; xxd -i calc.bin; XOR raw shellcode with key 0x5A; Base64-encode XOR output"
+        },
+        "generator": {
+            "filename": "generator",
+            "role": "helper utility used to convert raw shellcode bytes into the Base64-encoded XOR-obfuscated blob embedded in the loader",
+            "source_origin": "custom controlled implementation"
+        }
+    },
+    "key_apis": {
+        "loader": [
+            "Convert.FromBase64String",
+            "VirtualAlloc",
+            "Marshal.Copy",
+            "VirtualProtect",
+            "CreateThread",
+            "WaitForSingleObject"
+        ],
+        "payload": [
+            "position-independent shellcode",
+            "PEB walking",
+            "PE export table parsing",
+            "dynamic WinExec resolution",
+            "WinExec"
+        ]
+    },
+    "obfuscation": {
+        "enabled": true,
+        "encoding": "Base64",
+        "cipher": "single-byte XOR",
+        "xor_key": "0x5A",
+        "decode_location": "runtime memory only",
+        "embedded_blob_type": "Base64 string containing XOR-obfuscated shellcode bytes"
+    },
+    "payload_behavior": {
+        "description": "After runtime decoding, the shellcode resolves kernel32.dll and WinExec dynamically, builds the calc.exe command string on the stack, and invokes WinExec to launch Calculator.",
+        "expected_actions": [
+            "Base64-decode embedded blob",
+            "XOR-decode byte array using key 0x5A",
+            "allocate writable local process memory",
+            "copy decoded shellcode into allocated memory",
+            "change memory protection to PAGE_EXECUTE_READ",
+            "create local thread at decoded shellcode address",
+            "locate the Process Environment Block",
+            "walk loaded module structures to locate kernel32.dll",
+            "parse the kernel32.dll export table",
+            "resolve WinExec dynamically",
+            "build the calc.exe argument on the stack",
+            "invoke WinExec(\"calc.exe\", SW_SHOWNORMAL)"
+        ],
+        "payload_command": "calc.exe",
+        "payload_api": "WinExec",
+        "payload_visibility": "SW_SHOWNORMAL"
+    },
+    "code_placement": "Shellcode is stored as a Base64 string containing XOR-obfuscated bytes and is decoded into private memory inside the current process at runtime",
+    "execution_trigger": "Immediate execution via CreateThread with decoded shellcode memory as the thread start address",
+    "execution_target": "current process local memory region",
+    "expected_static_signals": {
+        "loader": [
+            "C# P/Invoke declarations for kernel32.dll",
+            "VirtualAlloc imported through DllImport",
+            "VirtualProtect imported through DllImport",
+            "CreateThread imported through DllImport",
+            "WaitForSingleObject imported through DllImport",
+            "large Base64-encoded embeddedBlob string",
+            "Convert.FromBase64String used to decode embedded blob",
+            "single-byte XOR loop using key 0x5A",
+            "Marshal.Copy used to stage decoded shellcode into unmanaged memory",
+            "VirtualAlloc allocating PAGE_READWRITE memory",
+            "VirtualProtect changing memory protection to PAGE_EXECUTE_READ",
+            "CreateThread using allocated memory as thread start address",
+            "absence of clear raw shellcode byte array",
+            "absence of clear calc.exe and WinExec strings before decoding",
+            "absence of CreateFileA or WriteFile payload drop behavior",
+            "absence of WinHTTP or network retrieval logic",
+            "absence of remote process injection APIs such as OpenProcess, VirtualAllocEx, WriteProcessMemory, or CreateRemoteThread"
+        ],
+        "payload": [
+            "decoded position-independent x64 shellcode bytes appear only at runtime",
+            "GS segment access pattern used to locate the PEB after decoding",
+            "PEB and loader structure traversal after decoding",
+            "kernel32.dll base discovery after decoding",
+            "PE header and export directory parsing after decoding",
+            "WinExec string comparison after decoding",
+            "calc.exe stack string construction after decoding",
+            "direct call to resolved WinExec address"
+        ]
+    },
+    "expected_dynamic_signals": {
+        "loader": [
+            "Base64 blob is decoded in process memory",
+            "XOR decoding loop reconstructs shellcode bytes in memory",
+            "allocates private PAGE_READWRITE memory in the current process",
+            "copies decoded shellcode into allocated memory",
+            "changes allocated memory protection to PAGE_EXECUTE_READ",
+            "creates a local thread with start address inside private allocated memory",
+            "waits indefinitely for the shellcode thread using WaitForSingleObject"
+        ],
+        "payload": [
+            "decoded shellcode executes from private memory inside the loader process",
+            "kernel32.dll export table is resolved at runtime",
+            "calc.exe is launched by the shellcode",
+            "shellcode thread runs from memory not backed by a normal executable section"
+        ],
+        "process": [
+            "A03_4_obfuscated_loader.exe spawns calc.exe",
+            "no second-stage executable is written to disk",
+            "no remote process is opened or injected",
+            "no network connection is required"
+        ]
+    },
+    "semantic_meaning": "Demonstrates an obfuscated fileless shellcode loader pattern in which the payload is concealed from static analysis using Base64 encoding and XOR obfuscation, reconstructed only at runtime, staged into executable memory, and executed directly inside the current process.",
+    "control_notes": {
+        "benign_intent": true,
+        "network_required": false,
+        "persistence": false,
+        "credential_access": false,
+        "destructive_actions": false,
+        "payload_effect": "launches calc.exe as a benign execution marker",
+        "obfuscation_purpose": "conceals recognizable shellcode bytes and payload strings from straightforward static inspection"
+    },
+    "success_conditions": [
+        "embedded Base64 blob decodes successfully",
+        "XOR decoding with key 0x5A reconstructs the original shellcode bytes",
+        "VirtualAlloc successfully allocates local memory for the decoded shellcode",
+        "Marshal.Copy writes decoded shellcode into allocated unmanaged memory",
+        "VirtualProtect successfully changes memory protection to PAGE_EXECUTE_READ",
+        "CreateThread successfully starts execution at the decoded shellcode buffer",
+        "shellcode resolves WinExec dynamically",
+        "shellcode launches calc.exe"
+    ]
+}

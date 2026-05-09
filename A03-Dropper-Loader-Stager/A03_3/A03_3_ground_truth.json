@@ -1,0 +1,133 @@
+{
+    "sample_id": "A03_3",
+    "sample_name": "in_mem_shellcode_loader",
+    "dataset": "A",
+    "dataset_type": "controlled",
+    "behavior_class": "A03",
+    "behavior_class_name": "Dropper Loader Stager Behavior Class",
+    "source_repository": "https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A03-Dropper-Loader-Stager/A03_3",
+    "language": "C++ / x64 Assembly",
+    "platform": "Windows",
+    "build_architecture": "x64",
+    "primary_behavior": "loader",
+    "technique": "in_memory_shellcode_execution",
+    "subtechnique": "embedded_shellcode_local_thread",
+    "execution_model": "fileless_local_code_execution",
+    "description": "Loads an embedded x64 shellcode payload into dynamically allocated memory in the current process, changes the memory protection to executable, and runs the payload using a newly created local thread.",
+    "components": {
+        "loader": {
+            "filename": "A03_3_in_mem_shellcode_loader.exe",
+            "role": "allocates local memory, copies embedded shellcode into the allocated region, changes memory protection, and creates a thread at the shellcode address",
+            "source_origin": "custom controlled implementation"
+        },
+        "payload": {
+            "filename": "embedded_shellcode",
+            "role": "custom x64 shellcode executed from local process memory",
+            "payload_type": "custom_x64_winexec_calc_shellcode",
+            "payload_generation": "nasm -f win64 calc.asm -o calc.obj; objcopy -O binary calc.obj calc.bin; xxd -i calc.bin"
+        }
+    },
+    "key_apis": {
+        "loader": [
+            "VirtualAlloc",
+            "memcpy",
+            "VirtualProtect",
+            "CreateThread",
+            "WaitForSingleObject",
+            "CloseHandle",
+            "VirtualFree",
+            "GetLastError"
+        ],
+        "payload": [
+            "position-independent shellcode",
+            "PEB walking",
+            "PE export table parsing",
+            "dynamic WinExec resolution",
+            "WinExec"
+        ]
+    },
+    "payload_behavior": {
+        "description": "The embedded shellcode resolves kernel32.dll and WinExec at runtime, builds the calc.exe command string on the stack, and invokes WinExec to launch Calculator.",
+        "expected_actions": [
+            "locate the Process Environment Block",
+            "walk loaded module structures to locate kernel32.dll",
+            "parse the kernel32.dll export table",
+            "resolve WinExec dynamically",
+            "build the calc.exe argument on the stack",
+            "invoke WinExec(\"calc.exe\", SW_SHOWNORMAL)",
+            "return to the loader thread"
+        ],
+        "payload_command": "calc.exe",
+        "payload_api": "WinExec",
+        "payload_visibility": "SW_SHOWNORMAL"
+    },
+    "code_placement": "Raw shellcode bytes embedded as an unsigned char array and copied into private memory allocated inside the current process",
+    "execution_trigger": "Immediate execution via CreateThread with the allocated memory region as the thread start address",
+    "execution_target": "current process local memory region",
+    "expected_static_signals": {
+        "loader": [
+            "embedded unsigned char shellcode buffer",
+            "calc.exe string embedded in shellcode bytes",
+            "WinExec string embedded in shellcode bytes",
+            "VirtualAlloc allocating local PAGE_READWRITE memory",
+            "memcpy copying shellcode into allocated memory",
+            "VirtualProtect changing memory protection to PAGE_EXECUTE_READ",
+            "CreateThread using allocated memory as LPTHREAD_START_ROUTINE",
+            "WaitForSingleObject waiting on shellcode thread",
+            "VirtualFree releasing allocated memory",
+            "absence of CreateFileA or WriteFile payload drop behavior",
+            "absence of WinHTTP or network retrieval logic",
+            "absence of remote process injection APIs such as OpenProcess, VirtualAllocEx, WriteProcessMemory, or CreateRemoteThread"
+        ],
+        "payload": [
+            "position-independent x64 shellcode bytes",
+            "GS segment access pattern used to locate the PEB",
+            "PEB and loader structure traversal",
+            "kernel32.dll base discovery",
+            "PE header and export directory parsing",
+            "WinExec string comparison",
+            "calc.exe stack string construction",
+            "direct call to resolved WinExec address"
+        ]
+    },
+    "expected_dynamic_signals": {
+        "loader": [
+            "allocates private PAGE_READWRITE memory in the current process",
+            "copies embedded shellcode into allocated memory",
+            "changes allocated memory protection to PAGE_EXECUTE_READ",
+            "creates a local thread with start address inside private allocated memory",
+            "waits for the shellcode thread to complete",
+            "frees allocated memory after execution"
+        ],
+        "payload": [
+            "shellcode executes from private memory inside the loader process",
+            "kernel32.dll export table is resolved at runtime",
+            "calc.exe is launched by the shellcode",
+            "shellcode thread returns after WinExec invocation"
+        ],
+        "process": [
+            "A03_3_in_mem_shellcode_loader.exe spawns calc.exe",
+            "no second-stage executable is written to disk",
+            "no remote process is opened or injected",
+            "no network connection is required"
+        ]
+    },
+    "semantic_meaning": "Demonstrates a fileless local shellcode loader pattern in which a payload is embedded as raw bytes, staged into executable memory within the current process, and executed directly without writing a separate payload executable to disk.",
+    "control_notes": {
+        "benign_intent": true,
+        "network_required": false,
+        "persistence": false,
+        "credential_access": false,
+        "destructive_actions": false,
+        "payload_effect": "launches calc.exe as a benign execution marker"
+    },
+    "success_conditions": [
+        "VirtualAlloc successfully allocates local memory for the shellcode",
+        "embedded shellcode bytes are copied into the allocated memory region",
+        "VirtualProtect successfully changes memory protection to PAGE_EXECUTE_READ",
+        "CreateThread successfully starts execution at the allocated shellcode buffer",
+        "shellcode resolves WinExec dynamically",
+        "shellcode launches calc.exe",
+        "loader waits for the shellcode thread and exits cleanly"
+    ]
+}
