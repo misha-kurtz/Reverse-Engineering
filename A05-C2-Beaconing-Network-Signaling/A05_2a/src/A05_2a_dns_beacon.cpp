@@ -59,7 +59,7 @@ int main()
         return 1;
     }
 
-    std::cout << "[*] Starting A05_2a safe DNS signaling simulator" << std::endl;
+    std::cout << "[*] Starting A05_2a DNS beacon..." << std::endl;
     std::cout << "[*] Base domain: " << base_domain << std::endl;
     std::cout << "[*] Iterations: " << iterations << std::endl;
     std::cout << "[*] Sleep: " << sleep_ms << " ms" << std::endl;

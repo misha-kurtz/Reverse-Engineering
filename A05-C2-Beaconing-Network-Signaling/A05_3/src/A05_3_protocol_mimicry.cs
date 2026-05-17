@@ -13,11 +13,11 @@ namespace A05_3_protocol_mimicry
 
         static void Main(string[] args)
         {
-            string url = "http://api.lab.test/v1/telemetry";
+            string url = "http://api.lab.local/v1/telemetry";
             int iterations = 10;
             int sleepMs = 15000; // 15 seconds
 
-            Console.WriteLine("[*] Starting A05_4 protocol mimicry simulator");
+            Console.WriteLine("[*] Starting A05_3_protocol_mimicry sample...");
             Console.WriteLine("[*] Target URL: " + url);
             Console.WriteLine("[*] Iterations: " + iterations);
             Console.WriteLine("[*] Sleep: " + sleepMs + " ms");

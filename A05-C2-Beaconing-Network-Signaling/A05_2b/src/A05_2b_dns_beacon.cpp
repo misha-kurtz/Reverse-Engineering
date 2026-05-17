@@ -66,7 +66,7 @@ int main()
         return 1;
     }
 
-    std::cout << "[*] Starting A05_2b safe DNS signaling simulator\n";
+    std::cout << "[*] Starting A05_2b DNS beacon...\n";
     std::cout << "[*] Base domain: " << base_domain << "\n";
 
     for (int i = 1; i <= iterations; ++i)
