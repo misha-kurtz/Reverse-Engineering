@@ -31,9 +31,9 @@ std::string build_query_name(const std::string &base_domain, int counter)
 bool perform_dns_lookup(const std::string &hostname)
 {
     addrinfo hints{};
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = IPPROTO_TCP;
+    hints.ai_family = AF_INET; // IPv4 A record only
+    hints.ai_socktype = 0;
+    hints.ai_protocol = 0;
 
     addrinfo *result = nullptr;
     int rc = getaddrinfo(hostname.c_str(), nullptr, &hints, &result);
@@ -48,7 +48,7 @@ bool perform_dns_lookup(const std::string &hostname)
 
 int main()
 {
-    const std::string base_domain = "beacon01.lab.test";
+    const std::string base_domain = "beacon01.lab.local";
     const int iterations = 10;
     const DWORD sleep_ms = 15000; // 15 seconds
 
