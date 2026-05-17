@@ -1,13 +1,11 @@
-// A05_4_ProtocolMimicry.cs
-// Safe lab-only protocol mimicry signaling simulator for Dataset A.
-// No persistence, no command channel, no exfiltration, no stealth.
+// A05_3_protocol_mimicry.cs
 
 using System;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
 
-namespace A05_4_ProtocolMimicry
+namespace A05_3_protocol_mimicry
 {
     internal class Program
     {
