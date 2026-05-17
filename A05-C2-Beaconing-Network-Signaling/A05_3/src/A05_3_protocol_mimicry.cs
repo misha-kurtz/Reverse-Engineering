@@ -39,11 +39,13 @@ namespace A05_3_protocol_mimicry
                 {
                     using (var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json"))
                     {
-                        HttpResponseMessage response = Client.PostAsync(url, content).GetAwaiter().GetResult();
-
-                        Console.WriteLine("[*] Sent request " + i +
-                                          " | HTTP " + (int)response.StatusCode +
-                                          " " + response.StatusCode);
+                        using (HttpResponseMessage response =
+                            Client.PostAsync(url, content).GetAwaiter().GetResult())
+                        {
+                            Console.WriteLine("[*] Sent request " + i +
+                                              " | HTTP " + (int)response.StatusCode +
+                                              " " + response.StatusCode);
+                        }
                     }
                 }
                 catch (Exception ex)
