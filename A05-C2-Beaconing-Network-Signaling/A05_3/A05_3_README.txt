@@ -1,0 +1,2 @@
+Description:
+This sample simulates a beaconing pattern by sending periodic HTTP POST requests to a target API endpoint. The payload mimics typical telemetry data that a desktop application might send, including session identifiers, event types, timestamps, and application metadata. The sample includes configurable parameters for the number of iterations and the sleep duration between requests to allow for flexible testing of different beaconing intervals.

@@ -1,5 +1,12 @@
 // A05_3_protocol_mimicry.cs
 
+/*
+Underlying protocol/actual transport: HTTP POST requests 
+
+Mimicked protocol/application pattern: 
+Legitimate REST-style telemetry/API traffic from a desktop app
+*/
+
 using System;
 using System.Net.Http;
 using System.Text;
