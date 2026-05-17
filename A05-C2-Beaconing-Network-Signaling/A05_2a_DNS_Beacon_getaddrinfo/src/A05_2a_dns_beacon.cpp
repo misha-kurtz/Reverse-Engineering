@@ -1,9 +1,8 @@
-// A05_2a_getaddrinfo_dns_signal.cpp
-// Safe lab-only DNS signaling simulator for Dataset A.
-// No persistence, no system fingerprinting, no exfiltration, no command channel.
+// A05_2a_dns_beacon.cpp
+// uses getaddrinfo to perform DNS lookups for a series of generated hostnames
 
 /*
-builds a harmless query like tick-0001.beacon01.lab.test
+builds DNS query (ex. tick-0001.beacon01.lab.test)
 performs a DNS lookup with getaddrinfo
 sleeps for a fixed interval
 repeats for a fixed number of iterations
