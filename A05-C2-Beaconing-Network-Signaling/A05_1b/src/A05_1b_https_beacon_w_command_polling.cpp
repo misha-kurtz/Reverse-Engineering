@@ -1,6 +1,6 @@
 // A05_1b_https_beacon_polling.cpp
 // Controlled HTTPS beacon with benign command polling.
-// Supports only: noop, ping, sleep|seconds
+// Supports commands: noop, ping, sleep|seconds
 
 #include "C2Client.h"
 #include <windows.h>
