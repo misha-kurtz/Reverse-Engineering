@@ -1,9 +1,8 @@
 // A05_2b_DnsQueryA_dns_signal.cpp
-// Safe lab-only DNS signaling simulator for Dataset A.
-// Uses DnsQuery_A for stronger DNS-specific static artifacts.
+// Uses DnsQuery_A to perform DNS lookups for a series of generated hostnames
 
 /*
-builds a harmless query like tick-0001.beacon01.lab.test
+builds a DNS query (ex. tick-0001.beacon01.lab.test
 performs a DNS lookup with DnsQuery_A
 sleeps for a fixed interval
 repeats for a fixed number of iterations
@@ -55,7 +54,7 @@ bool perform_dns_a_query(const std::string &hostname)
 
 int main()
 {
-    const std::string base_domain = "beacon02.lab.test";
+    const std::string base_domain = "beacon02.lab.local";
     const int iterations = 10;
     const DWORD sleep_ms = 15000;
 
