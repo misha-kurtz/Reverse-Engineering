@@ -30,7 +30,10 @@ int main()
     }
 
     // 2. Create the listening socket (IPv4, Stream, TCP)
-    listenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    // --- NEW COMPATIBLE BLOCK ---
+    // We create the socket using WSASocketA and pass 0 to dwFlags (omitting WSA_FLAG_OVERLAPPED)
+    listenSocket = WSASocketA(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, 0);
+
     if (listenSocket == INVALID_SOCKET)
     {
         fprintf(stderr, "[-] Socket creation failed: %d\n", WSAGetLastError());
