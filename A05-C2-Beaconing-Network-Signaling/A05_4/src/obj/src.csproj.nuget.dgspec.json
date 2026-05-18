@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\MK\\Reverse-Engineering\\A03-Dropper-Loader-Stager\\A03_4\\src\\src.csproj": {}
+    "V:\\Reverse-Engineering\\A05-C2-Beaconing-Network-Signaling\\A05_4\\src\\src.csproj": {}
   },
   "projects": {
-    "C:\\Users\\MK\\Reverse-Engineering\\A03-Dropper-Loader-Stager\\A03_4\\src\\src.csproj": {
+    "V:\\Reverse-Engineering\\A05-C2-Beaconing-Network-Signaling\\A05_4\\src\\src.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\MK\\Reverse-Engineering\\A03-Dropper-Loader-Stager\\A03_4\\src\\src.csproj",
+        "projectUniqueName": "V:\\Reverse-Engineering\\A05-C2-Beaconing-Network-Signaling\\A05_4\\src\\src.csproj",
         "projectName": "src",
-        "projectPath": "C:\\Users\\MK\\Reverse-Engineering\\A03-Dropper-Loader-Stager\\A03_4\\src\\src.csproj",
+        "projectPath": "V:\\Reverse-Engineering\\A05-C2-Beaconing-Network-Signaling\\A05_4\\src\\src.csproj",
         "packagesPath": "C:\\Users\\MK\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\MK\\Reverse-Engineering\\A03-Dropper-Loader-Stager\\A03_4\\src\\obj\\",
+        "outputPath": "V:\\Reverse-Engineering\\A05-C2-Beaconing-Network-Signaling\\A05_4\\src\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
