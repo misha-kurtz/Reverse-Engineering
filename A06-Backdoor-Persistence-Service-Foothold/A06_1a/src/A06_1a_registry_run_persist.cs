@@ -1,7 +1,7 @@
 using System;
 using Microsoft.Win32;
 
-namespace PersistenceSample
+namespace A06_1a_registry_run_persist
 {
     public class Program
     {
