@@ -1,4 +1,4 @@
-// A05_2a_dns_beacon.cpp
+// A05_2a_dns_beacon_getaddrinfo.cpp
 // uses getaddrinfo to perform DNS lookups for a series of generated hostnames
 
 /*

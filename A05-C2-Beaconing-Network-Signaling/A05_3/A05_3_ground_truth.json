@@ -1,0 +1,207 @@
+{
+    "sample_id": "A05_3",
+    "sample_name": "protocol_mimicry",
+    "dataset": "A",
+    "dataset_type": "controlled",
+    "behavior_class": "A05",
+    "behavior_class_name": "Beaconing C2 Networking Behavior Class",
+    "source_repository": "https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A05-Beaconing-C2-Networking/A05_3",
+    "language": "C#",
+    "platform": "Windows",
+    "build_architecture": "AnyCPU / x64",
+    "primary_behavior": "protocol_mimicry",
+    "technique": "http_protocol_mimicry",
+    "subtechnique": "rest_style_telemetry_heartbeat_posts",
+    "execution_model": "periodic_http_post_telemetry_emulation",
+    "description": "Performs repeated HTTP POST requests to a controlled API-style endpoint using the .NET HttpClient API. The sample sends structured JSON heartbeat telemetry and configures browser/application-style request headers to mimic legitimate REST-style telemetry traffic from a desktop client.",
+    "components": {
+        "telemetry_client": {
+            "filename": "A05_3_protocol_mimicry.exe",
+            "role": "generates periodic HTTP POST requests containing telemetry-style JSON heartbeat data and application-like request headers",
+            "source_origin": "custom controlled implementation"
+        },
+        "server_response": {
+            "filename": "telemetry_response.json",
+            "role": "static INetSim fakefile response returned by the controlled HTTP API-style endpoint",
+            "payload_type": "benign_json_acknowledgement",
+            "source_origin": "controlled lab infrastructure"
+        }
+    },
+    "key_apis": {
+        "telemetry_client": [
+            "System.Net.Http.HttpClient",
+            "HttpClient.PostAsync",
+            "System.Net.Http.StringContent",
+            "HttpResponseMessage",
+            "DefaultRequestHeaders.Clear",
+            "DefaultRequestHeaders.Add",
+            "Encoding.UTF8",
+            "DateTime.UtcNow.ToString",
+            "Thread.Sleep"
+        ]
+    },
+    "network_behavior": {
+        "protocol": "HTTP",
+        "method": "POST",
+        "server": "controlled lab HTTP server",
+        "api_domain": "api.lab.local",
+        "api_uri": "http://api.lab.local/v1/telemetry",
+        "controlled_lab_target": true,
+        "beacon_count": 10,
+        "sleep_ms": 15000,
+        "jitter_used": false,
+        "content_type": "application/json",
+        "mimicked_protocol_pattern": "legitimate REST-style desktop telemetry API traffic",
+        "headers": {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) TelemetryClient/1.4.2",
+            "Accept": "application/json",
+            "Accept-Language": "en-US,en;q=0.9",
+            "X-Client-Version": "1.4.2",
+            "X-Request-Origin": "desktop-client"
+        },
+        "json_fields": [
+            "session_id",
+            "event_type",
+            "timestamp",
+            "application",
+            "version",
+            "status"
+        ],
+        "payload_staged_to_disk": false,
+        "secondary_payload_downloaded": false
+    },
+    "beacon_behavior": {
+        "description": "The sample configures application-like HTTP headers, builds a JSON telemetry heartbeat payload, submits it to a controlled API endpoint, records the HTTP response status, sleeps for a fixed interval, and repeats for a fixed number of iterations.",
+        "expected_actions": [
+            "initialize target URL http://api.lab.local/v1/telemetry",
+            "initialize shared HttpClient instance",
+            "clear default request headers",
+            "configure browser/application-style User-Agent header",
+            "configure JSON Accept header",
+            "configure Accept-Language header",
+            "configure X-Client-Version header",
+            "configure X-Request-Origin header",
+            "build JSON heartbeat payload with session identifier",
+            "include event_type heartbeat in JSON body",
+            "include UTC ISO 8601 timestamp in JSON body",
+            "include application name TelemetryClient",
+            "include version 1.4.2",
+            "include status ok",
+            "send HTTP POST request using HttpClient.PostAsync",
+            "log HTTP status code returned by server",
+            "sleep for 15000 milliseconds between requests",
+            "repeat for 10 total iterations"
+        ],
+        "beacon_id": "A05_3",
+        "max_beacons": 10,
+        "timing_model": "fixed_interval_http_post_telemetry",
+        "command_polling": false,
+        "interactive_channel": false
+    },
+    "protocol_mimicry_behavior": {
+        "description": "The sample disguises simple periodic beaconing as benign application telemetry by using realistic REST-style endpoint naming, JSON request bodies, versioned client metadata, and browser/application-style HTTP headers.",
+        "mimicked_application": "TelemetryClient",
+        "mimicked_version": "1.4.2",
+        "mimicked_endpoint_style": "versioned REST API path",
+        "mimicked_event_type": "heartbeat",
+        "actual_transport": "HTTP POST",
+        "actual_behavior": "periodic telemetry-style heartbeat submission"
+    },
+    "code_placement": "Protocol mimicry and telemetry-style beaconing logic are implemented directly inside the managed C# executable using .NET HttpClient APIs",
+    "execution_trigger": "Program entry point starts the telemetry POST loop automatically",
+    "execution_target": "controlled HTTP API-style endpoint at api.lab.local",
+    "expected_static_signals": {
+        "telemetry_client": [
+            ".NET HttpClient usage",
+            "HttpClient.PostAsync used for outbound HTTP POST requests",
+            "StringContent used to build application/json request body",
+            "hardcoded URL http://api.lab.local/v1/telemetry",
+            "hardcoded application name TelemetryClient",
+            "hardcoded client version 1.4.2",
+            "browser/application-style User-Agent string",
+            "Accept application/json header",
+            "Accept-Language header",
+            "X-Client-Version custom header",
+            "X-Request-Origin custom header",
+            "JSON string construction containing session_id, event_type, timestamp, application, version, and status fields",
+            "DateTime.UtcNow.ToString(\"o\") usage for ISO 8601 timestamps",
+            "counter-based session identifier format sess-####",
+            "fixed iteration count of 10",
+            "fixed sleep interval of 15000 milliseconds",
+            "Thread.Sleep usage between POST requests",
+            "absence of command polling logic",
+            "absence of command execution logic",
+            "absence of payload download logic",
+            "absence of persistence mechanisms"
+        ]
+    },
+    "expected_dynamic_signals": {
+        "network": [
+            "outbound HTTP POST requests to api.lab.local",
+            "requests target /v1/telemetry path",
+            "Content-Type application/json is present",
+            "User-Agent contains TelemetryClient/1.4.2",
+            "Accept header requests application/json",
+            "X-Client-Version header is present",
+            "X-Request-Origin header is present",
+            "JSON body contains session_id field",
+            "JSON body contains event_type heartbeat",
+            "JSON body contains UTC timestamp",
+            "JSON body contains application TelemetryClient",
+            "JSON body contains version 1.4.2",
+            "JSON body contains status ok",
+            "approximately 10 telemetry POST requests total",
+            "approximately 15 second interval between POST requests",
+            "HTTP 200 OK response from controlled INetSim server"
+        ],
+        "process": [
+            "A05_3_protocol_mimicry.exe runs as a standalone process",
+            "no child process is created",
+            "no shell process is spawned",
+            "no downloaded payload is written to disk",
+            "no arbitrary command execution occurs",
+            "no persistence artifact is created"
+        ],
+        "host": [
+            "console output shows protocol mimicry sample startup",
+            "console output shows target URL",
+            "console output shows iteration count",
+            "console output shows sleep interval",
+            "console output logs each sent request number",
+            "console output logs HTTP status code and reason phrase",
+            "program exits after completing all iterations"
+        ]
+    },
+    "semantic_meaning": "Demonstrates a controlled protocol mimicry pattern in which a program disguises periodic beaconing as legitimate REST-style desktop telemetry by sending JSON heartbeat data to an API-like endpoint with realistic application headers, version metadata, and structured event fields.",
+    "control_notes": {
+        "benign_intent": true,
+        "network_required": true,
+        "persistence": false,
+        "credential_access": false,
+        "destructive_actions": false,
+        "command_execution": false,
+        "command_polling": false,
+        "payload_download": false,
+        "interactive_channel": false,
+        "protocol_mimicry": true,
+        "payload_effect": "generates observable HTTP POST telemetry-style beacon traffic only",
+        "payload_staged_to_disk": false
+    },
+    "success_conditions": [
+        "Windows VM resolves api.lab.local to the INetSim server",
+        "controlled HTTP server is reachable",
+        "INetSim returns a static response for /v1/telemetry",
+        "sample configures browser/application-style HTTP headers",
+        "sample builds telemetry-style JSON heartbeat payloads",
+        "sample sends repeated HTTP POST requests to /v1/telemetry",
+        "requests include Content-Type application/json",
+        "requests include User-Agent containing TelemetryClient/1.4.2",
+        "requests include X-Client-Version and X-Request-Origin headers",
+        "POST bodies include session_id, event_type, timestamp, application, version, and status fields",
+        "INetSim service.log records the telemetry POST requests",
+        "INetSim postdata captures contain JSON heartbeat bodies",
+        "PCAP captures show repeated HTTP POST traffic",
+        "console output reports HTTP response status for each request",
+        "program exits after 10 iterations"
+    ]
+}

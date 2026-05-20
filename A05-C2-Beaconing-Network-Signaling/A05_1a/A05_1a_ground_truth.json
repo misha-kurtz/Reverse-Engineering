@@ -1,0 +1,162 @@
+{
+    "sample_id": "A05_1a",
+    "sample_name": "http_beacon",
+    "dataset": "A",
+    "dataset_type": "controlled",
+    "behavior_class": "A05",
+    "behavior_class_name": "Beaconing C2 Networking Behavior Class",
+    "source_repository": "https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A05-Beaconing-C2-Networking/A05_1a",
+    "language": "C#",
+    "platform": "Windows",
+    "build_architecture": "AnyCPU / x64",
+    "primary_behavior": "beaconing",
+    "technique": "http_periodic_beaconing",
+    "subtechnique": "http_get_beacon_with_jitter",
+    "execution_model": "periodic_outbound_http_checkin",
+    "description": "Performs repeated outbound HTTP GET requests to a controlled C2-style endpoint using the .NET WebClient API. Each beacon includes host metadata, username, sequence number, and UNIX timestamp in query parameters. The sample uses a browser-like User-Agent string and randomized sleep jitter between beacon attempts.",
+    "components": {
+        "beacon_client": {
+            "filename": "A05_1a_http_beacon.exe",
+            "role": "generates periodic HTTP GET beacon requests to a controlled lab endpoint and records success or failure through console output",
+            "source_origin": "custom controlled implementation"
+        },
+        "server_response": {
+            "filename": "beacon_response.txt",
+            "role": "static INetSim fakefile response returned by the controlled HTTP endpoint",
+            "payload_type": "benign_text_acknowledgement",
+            "source_origin": "controlled lab infrastructure"
+        }
+    },
+    "key_apis": {
+        "beacon_client": [
+            "System.Net.WebClient",
+            "WebClient.DownloadString",
+            "WebClient.Headers.Add",
+            "WebClient.UseDefaultCredentials",
+            "Environment.MachineName",
+            "Environment.UserName",
+            "DateTimeOffset.UtcNow.ToUnixTimeSeconds",
+            "Random.Next",
+            "Thread.Sleep"
+        ]
+    },
+    "network_behavior": {
+        "protocol": "HTTP",
+        "method": "GET",
+        "server": "controlled lab HTTP server",
+        "c2_domain": "c2.lab.local",
+        "c2_uri": "http://c2.lab.local/beacon",
+        "controlled_lab_target": true,
+        "beacon_count": 10,
+        "base_sleep_ms": 20000,
+        "jitter_percent": 42,
+        "minimum_sleep_ms": 11600,
+        "maximum_sleep_ms": 28400,
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.82 Safari/537.36",
+        "query_parameters": [
+            "id",
+            "host",
+            "user",
+            "seq",
+            "time"
+        ],
+        "payload_staged_to_disk": false,
+        "secondary_payload_downloaded": false
+    },
+    "beacon_behavior": {
+        "description": "The sample builds an HTTP GET request containing host and execution metadata, sends it to the controlled lab endpoint, receives a static response, sleeps for a randomized jitter interval, and repeats for a fixed number of iterations.",
+        "expected_actions": [
+            "initialize target URI http://c2.lab.local/beacon",
+            "configure browser-like User-Agent header",
+            "collect local machine name using Environment.MachineName",
+            "collect username using Environment.UserName",
+            "generate sequence number for each beacon",
+            "generate UNIX timestamp for each beacon",
+            "send HTTP GET request using WebClient.DownloadString",
+            "receive static HTTP response from controlled server",
+            "calculate randomized sleep interval using 42 percent jitter",
+            "sleep between beacon requests",
+            "repeat until maxBeacons count is reached"
+        ],
+        "beacon_id": "A05_1",
+        "max_beacons": 10,
+        "timing_model": "fixed_base_interval_with_random_jitter",
+        "command_polling": false,
+        "interactive_channel": false
+    },
+    "code_placement": "Beaconing logic is implemented directly inside the managed C# executable using .NET networking classes",
+    "execution_trigger": "Program entry point starts the beacon loop automatically",
+    "execution_target": "controlled HTTP endpoint at c2.lab.local",
+    "expected_static_signals": {
+        "beacon_client": [
+            ".NET WebClient usage",
+            "DownloadString call used for outbound HTTP GET request",
+            "hardcoded URL http://c2.lab.local/beacon",
+            "hardcoded beacon identifier A05_1",
+            "hardcoded browser-like User-Agent string",
+            "Environment.MachineName usage",
+            "Environment.UserName usage",
+            "DateTimeOffset.UtcNow.ToUnixTimeSeconds usage",
+            "query string construction containing id, host, user, seq, and time fields",
+            "Random.Next usage for jitter calculation",
+            "Thread.Sleep usage between beacon attempts",
+            "fixed maximum beacon count of 10",
+            "absence of command execution logic",
+            "absence of payload download logic",
+            "absence of process injection APIs",
+            "absence of persistence mechanisms"
+        ]
+    },
+    "expected_dynamic_signals": {
+        "network": [
+            "outbound HTTP GET requests to c2.lab.local",
+            "requests target /beacon path",
+            "query string contains id=A05_1",
+            "query string contains local hostname",
+            "query string contains local username",
+            "query string contains increasing seq value",
+            "query string contains UNIX timestamp",
+            "browser-like User-Agent header is present",
+            "HTTP 200 OK response from controlled INetSim server",
+            "approximately 10 beacon requests total",
+            "variable delay between requests due to jitter"
+        ],
+        "process": [
+            "A05_1a_http_beacon.exe runs as a standalone process",
+            "no child process is created",
+            "no shell process is spawned",
+            "no downloaded payload is written to disk",
+            "no persistence artifact is created"
+        ],
+        "host": [
+            "console output shows beacon URL",
+            "console output shows response length",
+            "console output shows randomized sleep duration",
+            "program exits after beacon loop completes"
+        ]
+    },
+    "semantic_meaning": "Demonstrates a controlled HTTP beaconing pattern in which a program periodically contacts a C2-style endpoint, transmits host metadata through URL query parameters, uses a realistic User-Agent string, and varies timing with jitter to resemble common implant check-in behavior.",
+    "control_notes": {
+        "benign_intent": true,
+        "network_required": true,
+        "persistence": false,
+        "credential_access": false,
+        "destructive_actions": false,
+        "command_execution": false,
+        "payload_download": false,
+        "payload_effect": "generates observable HTTP beacon traffic only",
+        "payload_staged_to_disk": false
+    },
+    "success_conditions": [
+        "Windows VM resolves c2.lab.local to the INetSim server",
+        "controlled HTTP server is reachable",
+        "INetSim returns a static response for /beacon",
+        "sample sends repeated HTTP GET requests to /beacon",
+        "requests include id, host, user, seq, and time query parameters",
+        "requests include the configured browser-like User-Agent header",
+        "INetSim service.log records the beacon requests",
+        "PCAP captures show repeated HTTP beacon traffic",
+        "console output reports successful beacon responses",
+        "beacon loop completes after 10 iterations"
+    ]
+}

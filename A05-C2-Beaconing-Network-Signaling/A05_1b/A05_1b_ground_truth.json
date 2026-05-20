@@ -1,0 +1,221 @@
+{
+    "sample_id": "A05_1b",
+    "sample_name": "https_beacon_w_command_polling",
+    "dataset": "A",
+    "dataset_type": "controlled",
+    "behavior_class": "A05",
+    "behavior_class_name": "Beaconing C2 Networking Behavior Class",
+    "source_repository": "https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A05-Beaconing-C2-Networking/A05_1b",
+    "language": "C++",
+    "platform": "Windows",
+    "build_architecture": "x64",
+    "primary_behavior": "beaconing_with_command_polling",
+    "technique": "https_periodic_beaconing",
+    "subtechnique": "https_json_checkin_with_benign_command_polling",
+    "execution_model": "threaded_outbound_https_checkin_and_result_submission",
+    "description": "Performs recurring HTTPS-based C2-style check-ins to a controlled lab server, retrieves benign command strings, processes supported lab commands, and submits command results back to the server. The sample uses a dedicated beacon thread, periodic sleep intervals, JSON-style API endpoints, and controlled command handling for noop, ping, and sleep commands.",
+    "components": {
+        "beacon_client": {
+            "filename": "A05_1b_https_beacon_w_command_polling.exe",
+            "role": "initializes a C2 client, tests HTTPS connectivity, creates a beacon thread, polls for benign commands, processes supported commands, and sends results back to the controlled server",
+            "source_origin": "custom controlled implementation"
+        },
+        "c2_client_library": {
+            "filename": "C2Client.h / C2Client.cpp",
+            "role": "encapsulates HTTPS communication, check-in requests, result submission, beacon interval tracking, and client running state",
+            "source_origin": "custom controlled implementation"
+        },
+        "server_responses": {
+            "filename": "api_ping.txt / api_checkin.json / api_result.json",
+            "role": "static INetSim HTTPS fakefile responses for connectivity testing, command polling, and result acknowledgement",
+            "payload_type": "benign_json_command_and_acknowledgement_responses",
+            "source_origin": "controlled lab infrastructure"
+        }
+    },
+    "key_apis": {
+        "beacon_client": [
+            "CreateThread",
+            "WaitForSingleObject",
+            "CloseHandle",
+            "Sleep",
+            "GetLocalTime",
+            "_wtoi",
+            "std::wstring",
+            "std::vector",
+            "std::to_wstring"
+        ],
+        "c2_client": [
+            "WinHTTP or HTTPS client request APIs",
+            "HTTPS request creation",
+            "HTTPS response parsing",
+            "JSON-style request body construction",
+            "JSON-style response parsing"
+        ]
+    },
+    "network_behavior": {
+        "protocol": "HTTPS",
+        "methods": [
+            "POST"
+        ],
+        "server": "controlled lab HTTPS server",
+        "c2_domain": "c2.lab.local",
+        "c2_base_url": "https://c2.lab.local",
+        "api_endpoints": [
+            "/api/ping",
+            "/api/checkin",
+            "/api/result"
+        ],
+        "controlled_lab_target": true,
+        "command_polling": true,
+        "result_submission": true,
+        "payload_staged_to_disk": false,
+        "secondary_payload_downloaded": false,
+        "supported_commands": [
+            "noop",
+            "ping",
+            "sleep|seconds"
+        ],
+        "sleep_command_min_seconds": 5,
+        "sleep_command_max_seconds": 300
+    },
+    "beacon_behavior": {
+        "description": "The sample initializes an HTTPS C2 client, tests connectivity, starts a dedicated beacon thread, sends recurring check-ins, parses returned command strings, executes only benign lab-safe command handlers, posts results to the controlled server, and sleeps for the configured interval before repeating.",
+        "expected_actions": [
+            "initialize C2 server URL https://c2.lab.local",
+            "construct C2Client object",
+            "test server connectivity using /api/ping",
+            "create dedicated beacon thread using CreateThread",
+            "mark C2 client active",
+            "send recurring beacon check-in requests",
+            "receive zero or more command strings from the server",
+            "send CHECKIN_OK result when no task is returned",
+            "parse command strings using pipe-delimited command and argument format",
+            "handle noop command by returning SUCCESS|NOOP",
+            "handle ping command by returning SUCCESS|PONG",
+            "handle sleep command by updating beacon interval",
+            "clamp sleep command argument between 5 and 300 seconds",
+            "ignore unsupported commands with benign ignored status",
+            "submit command result to /api/result",
+            "sleep for configured beacon interval",
+            "retry after 30 seconds if an exception occurs during beacon cycle"
+        ],
+        "beacon_id": "A05_1b",
+        "timing_model": "server_adjustable_interval_with_retry_delay",
+        "command_polling": true,
+        "interactive_channel": false
+    },
+    "command_behavior": {
+        "description": "The command handling logic is intentionally limited to benign lab commands and does not execute arbitrary operating system commands.",
+        "supported_commands": {
+            "noop": {
+                "argument_required": false,
+                "result": "SUCCESS|NOOP",
+                "effect": "confirms command polling and result submission path"
+            },
+            "ping": {
+                "argument_required": false,
+                "result": "SUCCESS|PONG",
+                "effect": "confirms command processing and response behavior"
+            },
+            "sleep": {
+                "argument_required": true,
+                "argument_format": "seconds",
+                "result": "SUCCESS|Beacon interval set to <seconds> seconds",
+                "effect": "updates beacon interval after clamping value between 5 and 300 seconds"
+            }
+        },
+        "unsupported_command_behavior": "returns IGNORED|Unsupported benign lab command and does not execute the command"
+    },
+    "code_placement": "Beaconing, command polling, command handling, and result submission logic are implemented inside the native C++ executable and supporting C2Client component",
+    "execution_trigger": "Program entry point initializes the C2 client and starts the beacon thread automatically",
+    "execution_target": "controlled HTTPS API-style endpoint at c2.lab.local",
+    "expected_static_signals": {
+        "beacon_client": [
+            "hardcoded HTTPS C2 base URL https://c2.lab.local",
+            "C2Client object allocation",
+            "connectivity test through /api/ping",
+            "CreateThread usage for dedicated beacon loop",
+            "WaitForSingleObject used to wait for beacon thread",
+            "Sleep usage between beacon cycles",
+            "GetLocalTime usage for timestamped logging",
+            "command string parsing using pipe delimiter",
+            "supported command strings noop, ping, and sleep",
+            "_wtoi usage to parse sleep argument",
+            "sleep interval clamping logic between 5 and 300 seconds",
+            "sendResult calls used for result submission",
+            "absence of arbitrary command execution logic",
+            "absence of cmd.exe launch logic",
+            "absence of payload download and execution logic",
+            "absence of persistence mechanisms"
+        ],
+        "c2_client": [
+            "HTTPS communication wrapper logic",
+            "checkIn method used for command polling",
+            "sendResult method used for command result submission",
+            "testConnection method used for /api/ping connectivity test",
+            "beacon interval getter and setter methods",
+            "client running and active state tracking"
+        ]
+    },
+    "expected_dynamic_signals": {
+        "network": [
+            "outbound HTTPS connection to c2.lab.local",
+            "connectivity request to /api/ping",
+            "recurring check-in requests to /api/checkin",
+            "command result submissions to /api/result",
+            "JSON-style request or response bodies",
+            "server responses containing benign command strings",
+            "result body contains command name, status, and output",
+            "sleep command changes delay between later beacon cycles"
+        ],
+        "process": [
+            "A05_1b_https_beacon_w_command_polling.exe runs as a standalone process",
+            "dedicated beacon thread is created inside the process",
+            "no child process is created",
+            "no shell process is spawned",
+            "no downloaded payload is written to disk",
+            "no arbitrary command execution occurs",
+            "no persistence artifact is created"
+        ],
+        "host": [
+            "console output shows HTTPS beacon initialization",
+            "console output shows C2 server URL",
+            "console output shows connectivity test result",
+            "console output shows beacon thread creation",
+            "console output shows command count returned by check-in",
+            "console output shows processed command and result",
+            "console output shows configured sleep interval",
+            "exception path logs retry delay if beacon cycle fails"
+        ]
+    },
+    "semantic_meaning": "Demonstrates a controlled HTTPS command-polling beacon pattern in which a program periodically contacts a C2-style API endpoint, retrieves benign tasking, processes only constrained lab-safe commands, and submits structured results back to the server without executing arbitrary commands or downloading secondary payloads.",
+    "control_notes": {
+        "benign_intent": true,
+        "network_required": true,
+        "persistence": false,
+        "credential_access": false,
+        "destructive_actions": false,
+        "command_execution": false,
+        "command_polling": true,
+        "payload_download": false,
+        "interactive_channel": false,
+        "payload_effect": "generates observable HTTPS command-polling beacon traffic and benign command result submissions only",
+        "payload_staged_to_disk": false
+    },
+    "success_conditions": [
+        "Windows VM resolves c2.lab.local to the INetSim server",
+        "controlled HTTPS server is reachable",
+        "sample successfully tests connectivity using /api/ping",
+        "sample creates the beacon thread successfully",
+        "sample sends recurring HTTPS check-in requests to /api/checkin",
+        "controlled server returns a benign command or empty task response",
+        "sample correctly handles noop command with SUCCESS|NOOP result",
+        "sample correctly handles ping command with SUCCESS|PONG result",
+        "sample correctly handles sleep command by updating beacon interval within allowed bounds",
+        "sample submits command results to /api/result",
+        "INetSim service.log records the HTTPS requests",
+        "captured POST data contains check-in and result metadata",
+        "PCAP captures show repeated HTTPS communication with the controlled server",
+        "no child shell or arbitrary command execution occurs"
+    ]
+}

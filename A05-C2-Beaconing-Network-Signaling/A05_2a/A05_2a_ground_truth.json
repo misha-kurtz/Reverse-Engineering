@@ -1,0 +1,159 @@
+{
+    "sample_id": "A05_2a",
+    "sample_name": "dns_beacon_getaddrinfo",
+    "dataset": "A",
+    "dataset_type": "controlled",
+    "behavior_class": "A05",
+    "behavior_class_name": "Beaconing C2 Networking Behavior Class",
+    "source_repository": "https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A05-Beaconing-C2-Networking/A05_2a",
+    "language": "C++",
+    "platform": "Windows",
+    "build_architecture": "x64",
+    "primary_behavior": "dns_beaconing",
+    "technique": "dns_periodic_beaconing",
+    "subtechnique": "generated_subdomain_a_record_lookup_getaddrinfo",
+    "execution_model": "periodic_dns_resolution_signal",
+    "description": "Performs repeated DNS A-record lookups for sequentially generated subdomains using the Winsock getaddrinfo API. Each query uses a counter-based hostname format under a controlled lab domain and is separated by a fixed sleep interval.",
+    "components": {
+        "dns_beacon_client": {
+            "filename": "A05_2a_dns_beacon_getaddrinfo.exe",
+            "role": "generates sequential DNS hostnames and resolves them using getaddrinfo to create observable DNS beacon traffic",
+            "source_origin": "custom controlled implementation"
+        },
+        "dns_server": {
+            "filename": "INetSim DNS service",
+            "role": "responds to generated DNS A-record lookups for the controlled lab domain",
+            "payload_type": "benign_dns_resolution_response",
+            "source_origin": "controlled lab infrastructure"
+        }
+    },
+    "key_apis": {
+        "dns_beacon_client": [
+            "WSAStartup",
+            "getaddrinfo",
+            "freeaddrinfo",
+            "Sleep",
+            "WSACleanup",
+            "std::ostringstream",
+            "std::setw",
+            "std::setfill"
+        ]
+    },
+    "network_behavior": {
+        "protocol": "DNS",
+        "query_type": "A",
+        "server": "controlled lab DNS server",
+        "base_domain": "beacon01.lab.local",
+        "query_pattern": "tick-####.beacon01.lab.local",
+        "example_queries": [
+            "tick-0001.beacon01.lab.local",
+            "tick-0002.beacon01.lab.local",
+            "tick-0003.beacon01.lab.local"
+        ],
+        "controlled_lab_target": true,
+        "beacon_count": 10,
+        "sleep_ms": 15000,
+        "jitter_used": false,
+        "payload_staged_to_disk": false,
+        "secondary_payload_downloaded": false
+    },
+    "beacon_behavior": {
+        "description": "The sample builds sequential DNS query names, performs IPv4 A-record resolution using getaddrinfo, logs whether each query resolved, sleeps for a fixed interval, and repeats for a fixed number of iterations.",
+        "expected_actions": [
+            "initialize Winsock using WSAStartup",
+            "configure base domain beacon01.lab.local",
+            "generate sequential query names using tick-#### format",
+            "perform IPv4 DNS lookup using getaddrinfo",
+            "free DNS resolution results using freeaddrinfo",
+            "log whether each query resolved",
+            "sleep for 15000 milliseconds between queries",
+            "repeat for 10 total iterations",
+            "clean up Winsock using WSACleanup"
+        ],
+        "beacon_id": "A05_2a",
+        "max_beacons": 10,
+        "timing_model": "fixed_interval_dns_queries",
+        "command_polling": false,
+        "interactive_channel": false
+    },
+    "code_placement": "DNS beaconing logic is implemented directly inside the native C++ executable using Winsock resolver APIs",
+    "execution_trigger": "Program entry point starts the DNS beacon loop automatically",
+    "execution_target": "controlled DNS domain beacon01.lab.local resolved by the lab DNS server",
+    "expected_static_signals": {
+        "dns_beacon_client": [
+            "Winsock initialization using WSAStartup",
+            "getaddrinfo usage for DNS resolution",
+            "freeaddrinfo usage to release resolver results",
+            "hardcoded base domain beacon01.lab.local",
+            "tick-#### sequential hostname generation pattern",
+            "std::ostringstream usage for hostname construction",
+            "std::setw and std::setfill usage for zero-padded counter formatting",
+            "AF_INET hint restricting resolution to IPv4 A-record behavior",
+            "fixed iteration count of 10",
+            "fixed sleep interval of 15000 milliseconds",
+            "Sleep usage between DNS lookups",
+            "WSACleanup usage",
+            "absence of HTTP or HTTPS client logic",
+            "absence of command polling logic",
+            "absence of command execution logic",
+            "absence of payload download logic",
+            "absence of persistence mechanisms"
+        ]
+    },
+    "expected_dynamic_signals": {
+        "network": [
+            "outbound DNS A-record queries for beacon01.lab.local subdomains",
+            "queries follow tick-####.beacon01.lab.local naming pattern",
+            "query counter increases sequentially from tick-0001 through tick-0010",
+            "DNS responses resolve to the controlled lab IP address when INetSim DNS is configured",
+            "approximately 15 second interval between DNS queries",
+            "no HTTP or HTTPS traffic is required for this sample",
+            "no TCP command channel is established"
+        ],
+        "process": [
+            "A05_2a_dns_beacon.exe runs as a standalone process",
+            "no child process is created",
+            "no shell process is spawned",
+            "no downloaded payload is written to disk",
+            "no arbitrary command execution occurs",
+            "no persistence artifact is created"
+        ],
+        "host": [
+            "console output shows DNS beacon startup",
+            "console output shows configured base domain",
+            "console output shows iteration count",
+            "console output shows sleep interval",
+            "console output logs each generated query",
+            "console output reports whether each query resolved",
+            "program exits after completing all iterations"
+        ]
+    },
+    "semantic_meaning": "Demonstrates a controlled DNS beaconing pattern in which a program periodically generates unique subdomain lookups under a lab-controlled domain, using DNS resolution itself as the observable signaling mechanism rather than HTTP requests, payload downloads, or interactive command channels.",
+    "control_notes": {
+        "benign_intent": true,
+        "network_required": true,
+        "persistence": false,
+        "credential_access": false,
+        "destructive_actions": false,
+        "command_execution": false,
+        "command_polling": false,
+        "payload_download": false,
+        "interactive_channel": false,
+        "payload_effect": "generates observable DNS beacon traffic only",
+        "payload_staged_to_disk": false
+    },
+    "success_conditions": [
+        "Windows VM is configured to use the controlled lab DNS server",
+        "INetSim DNS service is running",
+        "controlled DNS server resolves generated beacon01.lab.local subdomains",
+        "sample initializes Winsock successfully",
+        "sample generates sequential tick-####.beacon01.lab.local queries",
+        "sample performs DNS lookups using getaddrinfo",
+        "console output reports resolved or not resolved status for each query",
+        "INetSim service.log records DNS A-record queries",
+        "PCAP captures show sequential DNS queries",
+        "approximately 10 DNS beacon queries are observed",
+        "queries occur at approximately 15 second intervals",
+        "program exits after completing all iterations"
+    ]
+}

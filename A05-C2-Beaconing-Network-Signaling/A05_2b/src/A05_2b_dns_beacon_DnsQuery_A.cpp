@@ -1,4 +1,4 @@
-// A05_2b_DnsQueryA_dns_signal.cpp
+// A05_2b_dns_beacon_DnsQuery_A.cpp
 // Uses DnsQuery_A to perform DNS lookups for a series of generated hostnames
 
 /*

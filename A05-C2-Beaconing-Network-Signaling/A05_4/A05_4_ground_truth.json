@@ -1,0 +1,175 @@
+{
+    "sample_id": "A05_4",
+    "sample_name": "reverse_tcp_shell",
+    "dataset": "A",
+    "dataset_type": "controlled",
+    "behavior_class": "A05",
+    "behavior_class_name": "Beaconing C2 Networking Behavior Class",
+    "source_repository": "https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A05-Beaconing-C2-Networking/A05_4",
+    "language": "C#",
+    "platform": "Windows",
+    "build_architecture": "AnyCPU / x64",
+    "primary_behavior": "reverse_shell",
+    "technique": "tcp_reverse_shell",
+    "subtechnique": "outbound_tcp_cmd_standard_stream_redirection",
+    "execution_model": "interactive_outbound_tcp_command_channel",
+    "description": "Establishes an outbound TCP connection to a controlled lab listener, spawns cmd.exe locally, redirects the shell process standard input, output, and error streams, and relays command input and output over the established TCP socket. This creates an interactive reverse shell channel controlled by the remote listener.",
+    "components": {
+        "reverse_shell_client": {
+            "filename": "A05_4_reverse_tcp_shell.exe",
+            "role": "connects outbound to a controlled TCP listener, starts cmd.exe, redirects shell I/O streams, and relays interactive command traffic over the socket",
+            "source_origin": "custom controlled implementation"
+        },
+        "tcp_listener": {
+            "filename": "netcat listener",
+            "role": "controlled lab listener that accepts the outbound TCP connection and provides interactive command input",
+            "payload_type": "benign_operator_test_channel",
+            "source_origin": "controlled lab infrastructure"
+        }
+    },
+    "key_apis": {
+        "reverse_shell_client": [
+            "System.Net.Sockets.TcpClient",
+            "TcpClient.Connect",
+            "TcpClient.GetStream",
+            "NetworkStream",
+            "StreamReader",
+            "StreamWriter",
+            "System.Diagnostics.Process",
+            "Process.Start",
+            "ProcessStartInfo.FileName",
+            "ProcessStartInfo.CreateNoWindow",
+            "ProcessStartInfo.UseShellExecute",
+            "ProcessStartInfo.RedirectStandardInput",
+            "ProcessStartInfo.RedirectStandardOutput",
+            "ProcessStartInfo.RedirectStandardError",
+            "BeginOutputReadLine",
+            "BeginErrorReadLine",
+            "OutputDataReceived",
+            "ErrorDataReceived",
+            "Process.Kill"
+        ]
+    },
+    "network_behavior": {
+        "protocol": "TCP",
+        "connection_direction": "outbound",
+        "server": "controlled lab TCP listener",
+        "remote_ip": "192.168.67.5",
+        "remote_port": 8080,
+        "controlled_lab_target": true,
+        "interactive_channel": true,
+        "command_polling": false,
+        "beacon_count": null,
+        "payload_staged_to_disk": false,
+        "secondary_payload_downloaded": false
+    },
+    "shell_behavior": {
+        "description": "The sample connects to a remote TCP listener, starts cmd.exe with redirected standard streams, reads commands from the network stream, writes them into cmd.exe standard input, and sends command output and errors back to the listener asynchronously.",
+        "expected_actions": [
+            "initialize TcpClient",
+            "connect outbound to 192.168.67.5 on TCP port 8080",
+            "retrieve NetworkStream from TcpClient",
+            "wrap network stream with StreamReader and StreamWriter",
+            "configure cmd.exe as child process",
+            "set CreateNoWindow to true",
+            "set UseShellExecute to false",
+            "redirect standard input, output, and error",
+            "register asynchronous output and error event handlers",
+            "start cmd.exe using Process.Start",
+            "begin asynchronous standard output reading",
+            "begin asynchronous standard error reading",
+            "read commands from TCP stream",
+            "write received commands to cmd.exe standard input",
+            "send cmd.exe output back over TCP stream",
+            "terminate shell process if still running during cleanup",
+            "close stream resources when connection ends"
+        ],
+        "shell_path": "C:\\Windows\\System32\\cmd.exe",
+        "interactive_channel": true,
+        "command_execution": true,
+        "operator_initiated_commands": true
+    },
+    "code_placement": "Reverse shell connection, child process creation, stream redirection, and interactive TCP relay logic are implemented directly inside the managed C# executable",
+    "execution_trigger": "Program entry point starts the outbound TCP connection and launches the redirected shell after connection succeeds",
+    "execution_target": "controlled TCP listener at 192.168.67.5:8080 and local cmd.exe child process",
+    "expected_static_signals": {
+        "reverse_shell_client": [
+            ".NET TcpClient usage",
+            "hardcoded remote IP address 192.168.67.5",
+            "hardcoded remote TCP port 8080",
+            "TcpClient.Connect used for outbound connection",
+            "TcpClient.GetStream used to retrieve NetworkStream",
+            "StreamReader and StreamWriter wrapping socket stream",
+            "System.Diagnostics.Process usage",
+            "hardcoded cmd.exe path C:\\Windows\\System32\\cmd.exe",
+            "CreateNoWindow set to true",
+            "UseShellExecute set to false",
+            "RedirectStandardInput set to true",
+            "RedirectStandardOutput set to true",
+            "RedirectStandardError set to true",
+            "OutputDataReceived event handler",
+            "ErrorDataReceived event handler",
+            "BeginOutputReadLine usage",
+            "BeginErrorReadLine usage",
+            "StandardInput.WriteLine used to pass commands to cmd.exe",
+            "StreamWriter.WriteLine used to return command output over TCP",
+            "absence of periodic beacon timing loop",
+            "absence of payload download logic",
+            "absence of persistence mechanisms"
+        ]
+    },
+    "expected_dynamic_signals": {
+        "network": [
+            "outbound TCP connection from Windows VM to 192.168.67.5:8080",
+            "interactive command input received over established TCP stream",
+            "command output returned over the same TCP stream",
+            "no DNS beaconing is required if IP address is used directly",
+            "no HTTP or HTTPS traffic is required for this sample"
+        ],
+        "process": [
+            "A05_4_reverse_tcp_shell.exe runs as a standalone process",
+            "A05_4_reverse_tcp_shell.exe creates child process cmd.exe",
+            "cmd.exe runs with no visible console window",
+            "cmd.exe standard input is redirected",
+            "cmd.exe standard output is redirected",
+            "cmd.exe standard error is redirected",
+            "parent process relays data between TCP socket and cmd.exe",
+            "child shell process may terminate when network connection closes"
+        ],
+        "host": [
+            "console output reports network sink connection failure if listener is unavailable",
+            "interactive commands such as whoami, hostname, cd, or echo return output to the listener",
+            "TCPView or netstat shows established connection to 192.168.67.5:8080",
+            "Sysmon or Procmon may record cmd.exe child process creation",
+            "Sysmon may record outbound network connection from the reverse shell executable"
+        ]
+    },
+    "semantic_meaning": "Demonstrates a controlled reverse TCP shell pattern in which a program initiates an outbound connection to a remote listener, spawns a local command interpreter, redirects the interpreter standard streams over the socket, and enables interactive operator-driven command execution through the established network channel.",
+    "control_notes": {
+        "benign_intent": true,
+        "network_required": true,
+        "persistence": false,
+        "credential_access": false,
+        "destructive_actions": false,
+        "command_execution": true,
+        "command_polling": false,
+        "payload_download": false,
+        "interactive_channel": true,
+        "payload_effect": "provides a controlled interactive cmd.exe shell over an outbound TCP connection for lab observation",
+        "payload_staged_to_disk": false
+    },
+    "success_conditions": [
+        "controlled TCP listener is running on 192.168.67.5 port 8080",
+        "Windows VM can reach the listener over TCP",
+        "sample establishes outbound TCP connection to the listener",
+        "sample starts C:\\Windows\\System32\\cmd.exe as a child process",
+        "cmd.exe standard input, output, and error streams are redirected",
+        "commands entered from the listener are written to cmd.exe standard input",
+        "command output is returned to the listener over TCP",
+        "benign validation commands such as whoami, hostname, cd, or echo execute successfully",
+        "PCAP captures show interactive TCP traffic",
+        "Sysmon or Procmon records child process creation of cmd.exe",
+        "no secondary payload is downloaded or written to disk",
+        "connection cleanup terminates or closes shell resources"
+    ]
+}
