@@ -1,6 +1,6 @@
 # Project Objective
 - A retrieval-augmented malware reverse-engineering assistant that combines static and dynamic artifacts to improve semantic recovery from binaries.
-- Generates: a high-level, semantically enriched reconstruction of malicious program components that is more understandable and more actionable for reverse engineers than baseline decompiler output.
+- Generates high-level, semantically enriched reconstruction of malicious program components that is more understandable and more actionable for reverse engineers than baseline decompiler output.
 
 ### Malware Behavior Classes
 
