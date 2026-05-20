@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
  * Perhaps inferior to other methods such as process hollowing, but a useful TTP.
  */
 
-namespace APC_Injection
+namespace A02_4_APC_injector
 {
     class Program
     {
