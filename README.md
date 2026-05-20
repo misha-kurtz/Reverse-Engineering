@@ -11,7 +11,7 @@
 - **A05. Beaconing / Interactive C2**
 - **A06. Backdoor / Persistence / Service-Foothold**
 
-# Two-dataset design: Control versus Realism
+### Two-dataset design: Control versus Realism
 
 |Dataset|Goal|What you want|
 |---|---|---|
@@ -19,7 +19,7 @@
 |**B (Wild)**|Real-world validity|Noise, abstraction, diversity|
 
 
-## Dataset A: Controlled specimens
+### Dataset A: Controlled specimens
 
 **24-32 binaries**
 
@@ -31,7 +31,7 @@ Purpose:
 - evaluate semantic reconstruction against known source/intent
 - test whether RAG recovers meaning better than baseline
 
-## Dataset B: Wild/real-world specimens
+### Dataset B: Wild/real-world specimens
 
 **48–96 binaries**
 
