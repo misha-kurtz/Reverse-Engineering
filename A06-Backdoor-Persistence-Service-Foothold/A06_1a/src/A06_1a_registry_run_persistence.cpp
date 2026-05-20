@@ -2,6 +2,8 @@
 #include <iostream>
 #include <string>
 
+#pragma comment(lib, "Advapi32.lib")
+
 // Namespace structure matching your dataset design
 namespace A06_1a_registry_run_persist
 {
