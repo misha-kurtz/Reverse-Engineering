@@ -2,16 +2,11 @@
 
 ### Control Samples
 
-1. Minimal C++ embedded payload dropper: 
-https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A03-Dropper-Loader-Stager/A03_1
-2. Download-and-execute stager: 
-https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A03-Dropper-Loader-Stager/A03_2
-3. In-memory fileless shellcode loader: 
-https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A03-Dropper-Loader-Stager/A03_3
-4. Obfuscated loader: 
-https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A03-Dropper-Loader-Stager/A03_4
-5. Network-to-memory loader subclass: 
-https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A03-Dropper-Loader-Stager/A03_5
+1. [A03_1 Minimal C++ embedded payload dropper](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A03-Dropper-Loader-Stager/A03_1)
+2. [A03_2 Download-and-execute stager](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A03-Dropper-Loader-Stager/A03_2)
+3. [A03_3 In-memory fileless shellcode loader](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A03-Dropper-Loader-Stager/A03_3)
+4. [A03_4 Obfuscated loader](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A03-Dropper-Loader-Stager/A03_4)
+5. [A03_5 Network-to-memory loader subclass](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A03-Dropper-Loader-Stager/A03_5)
 
 
 |ID|Technique|Dominant APIs / Mechanisms|Static Artifacts (Ghidra)|Dynamic Artifacts (Procmon / Sysmon / PCAP)|Semantic Meaning|
