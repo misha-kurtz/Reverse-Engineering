@@ -1,3 +1,5 @@
+### A03 Controlled Dropper Loader Stager Behavior Class
+
 ### Control Samples
 
 1. Minimal C++ embedded payload dropper: 
@@ -11,7 +13,6 @@ https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A03-Dropper-Loader-
 5. Network-to-memory loader subclass: 
 https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A03-Dropper-Loader-Stager/A03_5
 
-### A03 Controlled Dropper Loader Stager Behavior Class
 
 |ID|Technique|Dominant APIs / Mechanisms|Static Artifacts (Ghidra)|Dynamic Artifacts (Procmon / Sysmon / PCAP)|Semantic Meaning|
 |---|---|---|---|---|---|
