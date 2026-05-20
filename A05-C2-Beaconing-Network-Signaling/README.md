@@ -3,13 +3,13 @@
 
 ### Control Samples
 
-1. [A05_1a: HTTP Beacon](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A05-C2-Beaconing-Network-Signaling/A05_1a)
-2. [A05_1b: HTTPS Beacon with Command Polling](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A05-C2-Beaconing-Network-Signaling/A05_1b)
-3. [A05_2a: DNS-Based Beaconing using `getaddrinfo`](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A05-C2-Beaconing-Network-Signaling/A05_2a)
-4. [A05_2b: DNS-Based Beaconing using `DnsQueryA`](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A05-C2-Beaconing-Network-Signaling/A05_2b)
-5. [A05_3: Protocol Mimicry](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A05-C2-Beaconing-Network-Signaling/A05_3)
-6. [A05_4: TCP Reverse Shell / Interactive C2](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A05-C2-Beaconing-Network-Signaling/A05_4)
-7. [A05_5: TCP Bind shell / listening interactive C2](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A05-C2-Beaconing-Network-Signaling/A05_5)
+1. [A05_1a HTTP Beacon](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A05-C2-Beaconing-Network-Signaling/A05_1a)
+2. [A05_1b HTTPS Beacon with Command Polling](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A05-C2-Beaconing-Network-Signaling/A05_1b)
+3. [A05_2a DNS-Based Beaconing using `getaddrinfo`](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A05-C2-Beaconing-Network-Signaling/A05_2a)
+4. [A05_2b DNS-Based Beaconing using `DnsQueryA`](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A05-C2-Beaconing-Network-Signaling/A05_2b)
+5. [A05_3 Protocol Mimicry](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A05-C2-Beaconing-Network-Signaling/A05_3)
+6. [A05_4 TCP Reverse Shell / Interactive C2](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A05-C2-Beaconing-Network-Signaling/A05_4)
+7. [A05_5 TCP Bind shell / listening interactive C2](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A05-C2-Beaconing-Network-Signaling/A05_5)
 
 
 |ID|Technique|Core Transition|Dominant APIs / Mechanisms|Static Artifacts (Ghidra)|Dynamic Artifacts (Procmon / PCAP / Sysmon)|Semantic Meaning|
