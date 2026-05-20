@@ -49,5 +49,3 @@ Introduce:
 - .NET (heavier frameworks)
 - Packed binaries
 - Mixed techniques
-
-
