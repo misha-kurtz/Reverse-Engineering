@@ -3,7 +3,7 @@
 ### Control Samples
 
 1. [A02_1 Simple DLL Injection](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A02-Process-Inj-Hollowing-Code-Inj/A02_1)
-2. [A02_2 Remote Thread Injection (shellcode or function pointer)](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A02-Process-Inj-Hollowing-Code-Inj/A02_2)
+2. [A02_2 Remote Thread Injection](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A02-Process-Inj-Hollowing-Code-Inj/A02_2)
 3. [A02_3 Thread Hijacking](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A02-Process-Inj-Hollowing-Code-Inj/A02_3)
 4. [A02_4 APC Injection](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A02-Process-Inj-Hollowing-Code-Inj/A02_4)
 5. [A02_5 Process Hollowing](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A02-Process-Inj-Hollowing-Code-Inj/A02_5)
