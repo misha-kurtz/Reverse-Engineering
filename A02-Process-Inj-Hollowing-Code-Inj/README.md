@@ -1,6 +1,3 @@
-- ==Add "expected_analysis_artifacts" section  to metadata 
-- ==update table to match actual analysis artifacts based on the logs I collect at runtime
-
 ### A02 Controlled Injection Behavior Class
 
 ### Control Samples
