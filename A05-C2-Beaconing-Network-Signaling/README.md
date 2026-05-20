@@ -1,5 +1,5 @@
 
-# A05 Beaconing / Interactive C2
+# A05 Beaconing / Interactive C2 Class
 
 ### Control Samples
 

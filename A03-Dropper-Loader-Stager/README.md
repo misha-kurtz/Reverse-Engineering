@@ -1,4 +1,4 @@
-# A03 Controlled Dropper Loader Stager Behavior Class
+# A03 Dropper / Loader / Stager Class
 
 ### Control Samples
 

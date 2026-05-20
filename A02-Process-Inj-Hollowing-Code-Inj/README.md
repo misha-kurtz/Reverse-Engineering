@@ -1,4 +1,4 @@
-# A02 Controlled Injection Behavior Class
+# A02 Process Injection / Hollowing / Code Injection Class
 
 ### Control Samples
 
