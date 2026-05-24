@@ -101,6 +101,12 @@ namespace RegistryOfflinePersistence
                 }
 
                 // 5. Serialize and save the changes back into the staging binary file
+                // FIX: Delete the staging file if a previous run left it behind, preventing Error 80
+                if (System.IO.File.Exists(stagingHivePath))
+                {
+                    System.IO.File.Delete(stagingHivePath);
+                }
+
                 result = ORSaveHive(hRootKey, stagingHivePath, 6, 2);
                 if (result != ERROR_SUCCESS)
                 {
@@ -109,10 +115,6 @@ namespace RegistryOfflinePersistence
                     Console.ResetColor();
                     return 1;
                 }
-
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine($"[+] Successfully modified staging hive at: {stagingHivePath}");
-                Console.ResetColor();
 
                 // 6. Mandatory Unmanaged Resource Cleanup BEFORE moving the file
                 // The offreg.dll handles must be closed completely, or Windows will throw a file-lock exception.
