@@ -140,46 +140,32 @@ void GetExePath(wchar_t *outBuffer, DWORD maxLen)
 
 void WriteToLog(LPCTSTR lpText, ...)
 {
-    FILE *fp;
-    wchar_t log_file[MAX_PATH] = L"";
-    wchar_t exePath[MAX_PATH];
+    FILE *logFile = NULL;
+    wchar_t logPath[MAX_PATH] = L"C:\\Users\\Public\\A06_2_Persistent_Service_log.txt";
 
-    GetExePath(exePath, MAX_PATH);
-    wcscpy_s(log_file, MAX_PATH, exePath);
-    wcscat_s(log_file, MAX_PATH, LOG_FILE_NAME);
+    va_list args;
+    va_start(args, lpText);
 
-    time_t rawtime;
-    struct tm *ptm;
-    wchar_t buf_time[DATETIME_BUFFER_SIZE];
-    time(&rawtime);
-    ptm = gmtime(&rawtime);
-    wcsftime(buf_time, sizeof(buf_time) / sizeof(*buf_time), L"%d.%m.%Y %H:%M", ptm);
-
-    wchar_t buffer_in[BUFFER_SIZE];
-    va_list ptr;
-    va_start(ptr, lpText);
-    vswprintf(buffer_in, BUFFER_SIZE, lpText, ptr);
-    va_end(ptr);
-
-    wchar_t buffer_out[BUFFER_SIZE];
-    swprintf(buffer_out, BUFFER_SIZE, L"%s %s\n", buf_time, buffer_in);
-
-    _wfopen_s(&fp, log_file, L"a,ccs=UTF-8");
-    if (fp)
+    _wfopen_s(&logFile, logPath, L"a,ccs=UTF-8");
+    if (logFile != NULL)
     {
-        fwprintf(fp, L"%s\n", buffer_out);
-        fclose(fp);
+        SYSTEMTIME st;
+        GetLocalTime(&st);
+
+        fwprintf(
+            logFile,
+            L"[%04d-%02d-%02d %02d:%02d:%02d] ",
+            st.wYear, st.wMonth, st.wDay,
+            st.wHour, st.wMinute, st.wSecond);
+
+        vfwprintf(logFile, lpText, args);
+        fwprintf(logFile, L"\n");
+
+        fclose(logFile);
     }
 
-    wcscat_s(buffer_out, BUFFER_SIZE, L"\n");
-    HANDLE stdOut = GetStdHandle(STD_OUTPUT_HANDLE);
-    if (stdOut != NULL && stdOut != INVALID_HANDLE_VALUE)
-    {
-        DWORD written = 0;
-        WriteConsole(stdOut, buffer_out, (DWORD)wcslen(buffer_out), &written, NULL);
-    }
+    va_end(args);
 }
-
 // --- Registry Interaction Functions ---
 
 BOOL CreateRegistryKey(HKEY hKeyParent, PWCHAR subkey)
