@@ -29,7 +29,7 @@ void WriteBeaconLog(const wchar_t *message)
     }
 }
 
-int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow)
 {
     // Log the initial execution event
     WriteBeaconLog(L"SampleApp initialized successfully under the logged-on user session.");
