@@ -166,6 +166,7 @@ void WriteToLog(LPCTSTR lpText, ...)
 
     va_end(args);
 }
+
 // --- Registry Interaction Functions ---
 
 BOOL CreateRegistryKey(HKEY hKeyParent, PWCHAR subkey)
@@ -255,11 +256,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpsz
     }
 
     // 1. Hardcode your dynamic analysis target application path here
-    // This eliminates the need for the "Install#Path" command line argument
     wcsncpy_s(m_szExeToRun, MAX_PATH, L"C:\\Users\\Public\\A06_2_SampleApp.exe", _TRUNCATE);
 
     // 2. Try to connect to the Service Control Manager to check if we are running as a service
-    // If StartServiceCtrlDispatcher succeeds, Windows SCM is executing this binary.
     SERVICE_TABLE_ENTRY serviceTableEntry[] =
         {
             {(LPWSTR)SERVICE_NAME, ServiceMain},
@@ -271,7 +270,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpsz
         DWORD dwError = GetLastError();
 
         // ERROR_FAILED_SERVICE_CONTROLLER_CONNECT means it was run by a user/double-clicked,
-        // NOT by the Service Control Manager. This is our cue to self-install!
         if (dwError == ERROR_FAILED_SERVICE_CONTROLLER_CONNECT)
         {
             WriteToLog(L"Not running as a service. Initiating automated self-installation workflow.");
@@ -284,7 +282,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpsz
                 {
                     WriteToLog(L"Failed to create persistence registry subkey.");
                 }
-                // Pre-populate the registry configuration key so the service knows what to monitor
                 if (!writeStringInRegistry(HKEY_LOCAL_MACHINE, (PWCHAR)SERVICE_REG_KEY, (PWCHAR)SERVICE_KEY_NAME, m_szExeToRun))
                 {
                     WriteToLog(L"Failed to write configuration target to registry.");
@@ -340,7 +337,7 @@ void WINAPI InstallService(void)
         return;
     }
 
-    SERVICE_DESCRIPTION description = {(LPTSTR) _T("Secured Globe Windows Service")};
+    SERVICE_DESCRIPTION description = {(LPTSTR) _T("A06_2 Service-Based Persistence Watchdog")};
     ChangeServiceConfig2(hService, SERVICE_CONFIG_DESCRIPTION, &description);
 
     if (!StartService(hService, 0, NULL))
@@ -375,7 +372,6 @@ void WINAPI UninstallService(void)
     }
     CloseServiceHandle(hSCManager);
 
-    // Clean up persistent state registry keys
     SHDeleteKeyW(HKEY_LOCAL_MACHINE, SERVICE_REG_KEY);
 }
 
@@ -407,7 +403,7 @@ void ReportServiceStatus(DWORD dwCurrentState, DWORD dwWin32ExitCode, DWORD dwWa
     SetServiceStatus(hServiceStatus, &serviceStatus);
 }
 
-// --- Session Deflowering & Token Execution ---
+// --- Session Isolation Escape Loop ---
 
 void ImpersonateActiveUserAndRun(void)
 {
@@ -421,8 +417,8 @@ void ImpersonateActiveUserAndRun(void)
         return;
     }
 
-    TCHAR szCurModule[MAX_PATH] = {0};
-    GetModuleFileName(NULL, szCurModule, MAX_PATH);
+    wchar_t szCurModule[MAX_PATH] = {0};
+    GetModuleFileNameW(NULL, szCurModule, MAX_PATH);
 
     for (size_t i = 0; i < session_count; i++)
     {
@@ -457,7 +453,6 @@ void ImpersonateActiveUserAndRun(void)
         }
         else
         {
-            // Fail-safe handling if token is unlinked
             realToken = hImpersonationToken;
         }
 
@@ -486,10 +481,22 @@ void ImpersonateActiveUserAndRun(void)
         }
 
         wchar_t commandLine[1024];
-        swprintf(commandLine, 1024, L"\"%s\" \"%s\"", szCurModule, SERVICE_COMMAND_Launcher);
+        swprintf_s(commandLine, 1024, L"\"%s\" \"%s\"", szCurModule, SERVICE_COMMAND_Launcher);
 
-        BOOL result = CreateProcessAsUserW(hUserToken, NULL, commandLine, NULL, NULL, FALSE,
-                                           NORMAL_PRIORITY_CLASS | CREATE_NEW_CONSOLE | CREATE_UNICODE_ENVIRONMENT, lpEnvironment, NULL, &StartupInfo, &processInfo);
+        WriteToLog(L"CreateProcessAsUser launcher commandLine: %s", commandLine);
+
+        BOOL result = CreateProcessAsUserW(
+            hUserToken,
+            szCurModule,
+            commandLine,
+            NULL,
+            NULL,
+            FALSE,
+            NORMAL_PRIORITY_CLASS | CREATE_NEW_CONSOLE | CREATE_UNICODE_ENVIRONMENT,
+            lpEnvironment,
+            NULL,
+            &StartupInfo,
+            &processInfo);
 
         if (!result)
             WriteToLog(L"CreateProcessAsUser - failed. Error %d", GetLastError());
@@ -685,7 +692,34 @@ LRESULT CALLBACK S_WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
                     return 1;
                 }
 
-                ImpersonateActiveUserAndRun();
+                // FIX: Launching SampleApp directly via CreateProcessW inside the active user context
+                STARTUPINFOW si = {0};
+                PROCESS_INFORMATION pi = {0};
+                wchar_t cmdLine[MAX_PATH * 2];
+
+                si.cb = sizeof(si);
+                swprintf_s(cmdLine, MAX_PATH * 2, L"\"%s\"", m_szExeToRun);
+
+                if (!CreateProcessW(
+                        m_szExeToRun,
+                        cmdLine,
+                        NULL,
+                        NULL,
+                        FALSE,
+                        CREATE_NEW_CONSOLE,
+                        NULL,
+                        NULL,
+                        &si,
+                        &pi))
+                {
+                    WriteToLog(L"CreateProcessW failed for '%s'. Error %d", m_szExeToRun, GetLastError());
+                }
+                else
+                {
+                    WriteToLog(L"Started target app: %s", m_szExeToRun);
+                    CloseHandle(pi.hThread);
+                    CloseHandle(pi.hProcess);
+                }
             }
         }
 
