@@ -34,10 +34,6 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmd
     // Log the initial execution event
     WriteBeaconLog(L"SampleApp initialized successfully under the logged-on user session.");
 
-    // Optional: Keep the MessageBox for immediate visual confirmation during dynamic analysis,
-    // or comment it out if you want the app to run completely silently in the background.
-    MessageBoxW(NULL, L"SampleApp is running under the logged-in session!", L"A06_2 Watchdog POC", MB_OK | MB_ICONINFORMATION);
-
     // Background worker beacon loop
     while (TRUE)
     {
