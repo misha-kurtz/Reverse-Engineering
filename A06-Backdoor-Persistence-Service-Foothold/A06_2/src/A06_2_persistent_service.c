@@ -1,4 +1,15 @@
 #define _CRT_SECURE_NO_WARNINGS
+
+#ifndef UNICODE
+#define UNICODE
+#endif
+
+#ifndef _UNICODE
+#define _UNICODE
+#endif
+
+#include <windows.h>
+#include <tchar.h>
 #include <windows.h>
 #include <tchar.h>
 #include <stdio.h>
@@ -12,6 +23,9 @@
 #include <stdarg.h>
 
 #include "PersistentService.h"
+
+// Link the missing Shell32 library for CommandLineToArgvW
+#pragma comment(lib, "shell32.lib")
 
 #pragma comment(lib, "wevtapi.lib")
 #pragma comment(lib, "wtsapi32.lib")
@@ -246,12 +260,36 @@ BOOL readStringFromRegistry(HKEY hKeyParent, PWCHAR subkey, PWCHAR valueName, wc
 
 int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpszCmdLine, int nCmdShow)
 {
+    int argc = 0;
+    wchar_t **argv = NULL;
+    BOOL bIsLauncher = FALSE;
+
     enableConsole();
     WriteToLog(L"A06_2_Persistent_Service: executable invoked.");
 
-    if (wcsstr(lpszCmdLine, SERVICE_COMMAND_Launcher) != NULL)
+    // Robust parsing using native Windows argument vector splitting
+    argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+    if (argv != NULL && argc > 1)
     {
-        WriteToLog(L"Launcher instance started. Entering AppMainFunction.");
+        // Check if any of our arguments match the Launcher flag
+        for (int i = 1; i < argc; i++)
+        {
+            if (_wcsicmp(argv[i], SERVICE_COMMAND_Launcher) == 0)
+            {
+                bIsLauncher = TRUE;
+                break;
+            }
+        }
+    }
+
+    // Free the allocated argument memory cleanly
+    if (argv)
+        LocalFree(argv);
+
+    // Route execution based on our verified parameter check
+    if (bIsLauncher)
+    {
+        WriteToLog(L"Launcher instance verified via argv. Entering AppMainFunction.");
         return AppMainFunction();
     }
 
@@ -269,7 +307,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpsz
     {
         DWORD dwError = GetLastError();
 
-        // ERROR_FAILED_SERVICE_CONTROLLER_CONNECT means it was run by a user/double-clicked,
+        // ERROR_FAILED_SERVICE_CONTROLLER_CONNECT means it was run by a user/double-clicked
         if (dwError == ERROR_FAILED_SERVICE_CONTROLLER_CONNECT)
         {
             WriteToLog(L"Not running as a service. Initiating automated self-installation workflow.");
@@ -480,15 +518,15 @@ void ImpersonateActiveUserAndRun(void)
             continue;
         }
 
-        wchar_t commandLine[1024];
-        swprintf_s(commandLine, 1024, L"\"%s\" \"%s\"", szCurModule, SERVICE_COMMAND_Launcher);
+        wchar_t cmdLine[1024];
+        swprintf_s(cmdLine, 1024, L"\"%s\" \"%s\"", szCurModule, SERVICE_COMMAND_Launcher);
 
-        WriteToLog(L"CreateProcessAsUser launcher commandLine: %s", commandLine);
+        WriteToLog(L"CreateProcessAsUser launcher commandLine: %s", cmdLine);
 
         BOOL result = CreateProcessAsUserW(
             hUserToken,
             szCurModule,
-            commandLine,
+            cmdLine,
             NULL,
             NULL,
             FALSE,
@@ -499,9 +537,22 @@ void ImpersonateActiveUserAndRun(void)
             &processInfo);
 
         if (!result)
-            WriteToLog(L"CreateProcessAsUser - failed. Error %d", GetLastError());
+        {
+            DWORD dwLastError = GetLastError();
+            TCHAR lpBuffer[256] = {0};
+            if (dwLastError != 0)
+            {
+                FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, dwLastError, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), lpBuffer, 255, NULL);
+            }
+            // FIX: Variable name synchronized to match 'cmdLine' definition context scope
+            WriteToLog(L"CreateProcessAsUser failed - Command Line = %s Error : %s", cmdLine, lpBuffer);
+        }
         else
+        {
             WriteToLog(L"CreateProcessAsUser - success");
+            CloseHandle(processInfo.hThread);
+            CloseHandle(processInfo.hProcess);
+        }
 
         DestroyEnvironmentBlock(lpEnvironment);
         CloseHandle(hUserToken);
@@ -574,6 +625,21 @@ void WINAPI ServiceMain(DWORD dwArgCount, LPTSTR lpszArgValues[])
 DWORD AppMainFunction(void)
 {
     WriteToLog(L"AppMainFunction start\n");
+
+    // FIX: Re-integrated standard named session singleton tracking handler validation object
+    HANDLE hMutex = CreateMutexW(NULL, TRUE, L"Local\\A06_2_Launcher_Instance_Mutex");
+    if (hMutex == NULL)
+    {
+        WriteToLog(L"CreateMutexW failed. Error %d", GetLastError());
+        return 1;
+    }
+    if (GetLastError() == ERROR_ALREADY_EXISTS)
+    {
+        WriteToLog(L"An instance of the launcher is already active in this user session. Exiting gracefully.");
+        CloseHandle(hMutex);
+        return 0;
+    }
+
     HINSTANCE hInstance = GetModuleHandle(NULL);
 
     TCHAR szDirPath[MAX_PATH] = {0};
@@ -608,6 +674,8 @@ DWORD AppMainFunction(void)
         DispatchMessage(&msg);
     }
     hWnd = NULL;
+
+    CloseHandle(hMutex);
     return (DWORD)msg.wParam;
 }
 
@@ -692,7 +760,6 @@ LRESULT CALLBACK S_WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
                     return 1;
                 }
 
-                // FIX: Launching SampleApp directly via CreateProcessW inside the active user context
                 STARTUPINFOW si = {0};
                 PROCESS_INFORMATION pi = {0};
                 wchar_t cmdLine[MAX_PATH * 2];
