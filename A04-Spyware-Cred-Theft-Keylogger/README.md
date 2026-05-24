@@ -1,6 +1,8 @@
 
 # Spyware / Credential Theft / Keylogger Class
 
+### Control Samples
+
 |ID|Technique|Core Transition|Dominant APIs / Mechanisms|Static Artifacts (Ghidra)|Dynamic Artifacts (Procmon / PCAP / Sysmon)|Semantic Meaning|
 |---|---|---|---|---|---|---|
 |**A04_1**|Keystroke Logging (Keylogger)|user input → captured keystrokes → local buffer/file|`SetWindowsHookEx`, `GetAsyncKeyState`, `CallNextHookEx`|Keyboard hook imports, polling loops, log file strings (e.g., `log.txt`)|Frequent keyboard polling or hook-triggered execution, continuous file writes (keystroke logs), minimal visible UI activity|Captures raw user input continuously to intercept sensitive information before application processing|
@@ -8,4 +10,3 @@
 |**A04_3**|System / Host Reconnaissance (Spyware Collection)|system state → enumerated data → staged collection|`GetUserName`, `GetComputerName`, `EnumProcesses`, `CreateToolhelp32Snapshot`|Enumeration API imports, system info strings, process iteration logic|Process enumeration activity, system information queries, burst of reconnaissance behavior early in execution, little/no persistence|Builds contextual intelligence about the host environment to support targeting or data enrichment|
 |**A04_4**|Data Aggregation + Exfiltration (Spyware Pipeline)|collected data → packaged → network exfiltration|`WinHttpSendRequest`, `InternetOpen`, `send`, encoding routines (Base64/XOR)|Networking APIs, encoded string blobs, hardcoded endpoints/IPs|Outbound HTTP/DNS traffic, POST requests with encoded payloads, beacon-like intervals, data visible in PCAP/Inetsim logs|Packages and transmits collected sensitive data to an external system for attacker use|
 
-### Control Samples
