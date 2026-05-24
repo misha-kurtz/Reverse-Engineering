@@ -39,30 +39,30 @@ This project aims to answer several core questions:
 ## Planned Pipeline Components
 
 ### Static Analysis
-Ghidra Headless
-Decompiled functions
-P-Code extraction
-CFG generation
-Import analysis
-String extraction
+- Ghidra Headless
+- Decompiled functions
+- P-Code extraction
+- CFG generation
+- Import analysis
+- String extraction
 
 ### Dynamic Analysis
-Procmon / Noriben
-Sysmon
-Regshot
-Wireshark / PCAP
-INetSim telemetry
-Process and network monitoring
+- Procmon / Noriben
+- Sysmon
+- Regshot
+- Wireshark / PCAP
+- INetSim telemetry
+- Process and network monitoring
 
 ### Storage & Retrieval
-MinIO object storage
-SHA256-indexed artifact organization
-Embedding pipeline for semantic retrieval
-Metadata-driven sample classification
+- MinIO object storage
+- SHA256-indexed artifact organization
+- Embedding pipeline for semantic retrieval
+- Metadata-driven sample classification
 
 ### Semantic Reconstruction
-Retrieval-Augmented Generation (RAG)
-Behavior-aware context retrieval
-Semantic labeling of recovered components
-High-level behavioral summarization
+- Retrieval-Augmented Generation (RAG)
+- Behavior-aware context retrieval
+- Semantic labeling of recovered components
+- High-level behavioral summarization
 
