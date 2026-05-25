@@ -108,8 +108,8 @@ int main()
             throw _com_error(E_NOINTERFACE);
         }
 
-        // Define payload path (e.g., calc.exe)
-        pExecAction->put_Path(_bstr_t(L"C:\\Windows\\System32\\cmd.exe"));
+        // Define payload path
+        pExecAction->put_Path(_bstr_t(L"C:\\Users\\Public\\A06_3a_SampleApp.exe"));
 
         // 8. Register the Task
         IRegisteredTaskPtr pRegisteredTask;
