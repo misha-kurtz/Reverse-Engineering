@@ -1,0 +1,8 @@
+# Dirs
+.vscode/
+**/src/bin/
+**/src/obj/
+
+# Files
+.gitattributes
+!.gitignore
