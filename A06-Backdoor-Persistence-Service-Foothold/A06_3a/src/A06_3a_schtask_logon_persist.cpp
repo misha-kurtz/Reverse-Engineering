@@ -109,7 +109,7 @@ int main()
         }
 
         // Define payload path (e.g., calc.exe)
-        pExecAction->put_Path(_bstr_t(L"C:\\Windows\\System32\\calc.exe"));
+        pExecAction->put_Arguments(_bstr_t(L"/c ping 127.0.0.1 -t"));
 
         // 8. Register the Task
         IRegisteredTaskPtr pRegisteredTask;
