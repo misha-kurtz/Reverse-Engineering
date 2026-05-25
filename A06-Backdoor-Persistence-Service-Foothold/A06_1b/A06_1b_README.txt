@@ -1,1 +1,0 @@
-Place offreg.dll in bin with executable for dynamic runs. 
