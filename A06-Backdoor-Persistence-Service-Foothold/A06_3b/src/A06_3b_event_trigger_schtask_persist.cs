@@ -63,14 +63,7 @@ namespace A06_3b_event_trigger_schtask_persist
                 dynamic trigger = triggers.Create(0); // TASK_TRIGGER_EVENT = 0
 
                 // XPath Subscription: Uses an absolute path comparison (No contains() functions)
-                string subscriptionXml =
-                    "<QueryList>" +
-                    "  <Query Id='0' Path='Security'>" +
-                    "    <Select Path='Security'>" +
-                    "        *[System[EventID=4688]] and *[EventData[Data[@Name='NewProcessName']='C:\\Program Files\\Mozilla Firefox\\firefox.exe']]" +
-                    "    </Select>" +
-                    "  </Query>" +
-                    "</QueryList>";
+                string subscriptionXml = @"<QueryList><Query Id='0' Path='Security'><Select Path='Security'>*[System[EventID=4688]] and *[EventData[Data[@Name='NewProcessName']='C:\Program Files\Mozilla Firefox\firefox.exe']]</Select></Query></QueryList>";
 
                 trigger.Id = "FirefoxLaunchTrigger";
                 trigger.Subscription = subscriptionXml;
