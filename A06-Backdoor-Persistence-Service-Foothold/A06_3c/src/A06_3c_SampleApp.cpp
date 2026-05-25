@@ -25,8 +25,8 @@ void LogPersistenceActivity(const std::string &logFilePath)
             timeStr.pop_back();
         }
 
-        // Write telemetry validation data
-        logFile << "[" << timeStr << "] [A06_3c] Legacy COM API Task execution active. Context: SYSTEM/Admin." << std::endl;
+        // Write telemetry validation data (Updated to accurately reflect Task Scheduler 2.0)
+        logFile << "[" << timeStr << "] [A06_3c] Modern Task Scheduler 2.0 COM API Task execution active. Context: SYSTEM/Admin." << std::endl;
         logFile.close();
     }
 }
@@ -36,7 +36,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     // Target validation file path matching your public folder data matrix
     std::string logFilePath = "C:\\Users\\Public\\A06_3c_COM_API_Scheduled_Task_SampleApp_log.txt";
 
-    // Immediate initial callback write to verify execution triggered instantly on logon
+    // Immediate initial callback write to verify execution triggered instantly
     LogPersistenceActivity(logFilePath);
 
     // Continuous background telemetry loop executing every 5 seconds
