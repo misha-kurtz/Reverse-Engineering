@@ -51,11 +51,12 @@ namespace A06_3b_event_trigger_schtask_persist
                 dynamic trigger = triggers.Create(0); // TASK_TRIGGER_EVENT = 0
 
                 // XPath Subscription: Selects Sysmon Event ID 1 where the Data field 'Image' contains 'firefox.exe'
+                // XPath Subscription: Selects Security Event ID 4688 where the Process Name contains 'firefox.exe'
                 string subscriptionXml =
                     "<QueryList>" +
-                    "  <Query Id='0' Path='Microsoft-Windows-Sysmon/Operational'>" +
-                    "    <Select Path='Microsoft-Windows-Sysmon/Operational'>" +
-                    "        *[System[EventID=1]] and *[EventData[Data[@Name='Image'] and (contains(., '\\firefox.exe'))]]" +
+                    "  <Query Id='0' Path='Security'>" +
+                    "    <Select Path='Security'>" +
+                    "        *[System[EventID=4688]] and *[EventData[Data[@Name='NewProcessName'] and (contains(., '\\firefox.exe'))]]" +
                     "    </Select>" +
                     "  </Query>" +
                     "</QueryList>";
