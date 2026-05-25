@@ -57,7 +57,12 @@ namespace A06_3b_event_trigger_schtask_persist
                     rootFolder.DeleteTask("A06_3b_EventTriggerTask", 0);
                     Console.WriteLine("    -> Stale task cleared successfully.");
                 }
-                catch (COMException) { /* Ignore if task didn't exist */ }
+                catch (Exception)
+                {
+                    // Dynamically bound COM calls often throw generic TargetInvocationException 
+                    // or base Exception objects if the task isn't found. Safe to ignore for a purge.
+                    Console.WriteLine("    -> No stale task found. Proceeding cleanly.");
+                }
 
                 milestone = 7;
                 Console.WriteLine($"[*] Debug ({milestone}): Allocating new Task Definition container...");
