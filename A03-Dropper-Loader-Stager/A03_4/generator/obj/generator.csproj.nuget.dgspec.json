@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\MK\\Reverse-Engineering\\A03-Dropper-Loader-Stager\\A03_4\\generator\\generator.csproj": {}
+    "V:\\Reverse-Engineering\\A03-Dropper-Loader-Stager\\A03_4\\generator\\generator.csproj": {}
   },
   "projects": {
-    "C:\\Users\\MK\\Reverse-Engineering\\A03-Dropper-Loader-Stager\\A03_4\\generator\\generator.csproj": {
+    "V:\\Reverse-Engineering\\A03-Dropper-Loader-Stager\\A03_4\\generator\\generator.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\MK\\Reverse-Engineering\\A03-Dropper-Loader-Stager\\A03_4\\generator\\generator.csproj",
+        "projectUniqueName": "V:\\Reverse-Engineering\\A03-Dropper-Loader-Stager\\A03_4\\generator\\generator.csproj",
         "projectName": "generator",
-        "projectPath": "C:\\Users\\MK\\Reverse-Engineering\\A03-Dropper-Loader-Stager\\A03_4\\generator\\generator.csproj",
+        "projectPath": "V:\\Reverse-Engineering\\A03-Dropper-Loader-Stager\\A03_4\\generator\\generator.csproj",
         "packagesPath": "C:\\Users\\MK\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\MK\\Reverse-Engineering\\A03-Dropper-Loader-Stager\\A03_4\\generator\\obj\\",
+        "outputPath": "V:\\Reverse-Engineering\\A03-Dropper-Loader-Stager\\A03_4\\generator\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
