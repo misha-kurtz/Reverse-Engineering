@@ -1,4 +1,4 @@
-# A06.3d Logon-Triggered Scheduled Task Persistence
+# A06.3d Logon-Triggered `schtasks.exe` Persistence
 
 ## Summary
 
