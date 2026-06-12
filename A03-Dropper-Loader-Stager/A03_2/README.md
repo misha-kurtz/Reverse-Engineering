@@ -1,4 +1,4 @@
-# A03_2 Download-and-Execute Stager
+# A03.2 Download-and-Execute Stager
 
 ## Summary
 
