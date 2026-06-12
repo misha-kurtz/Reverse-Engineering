@@ -10,7 +10,7 @@ void WriteBeaconLog(const wchar_t *message)
 {
     FILE *logFile = NULL;
     // Updated log path to explicitly isolate A06_3a data
-    wchar_t logPath[MAX_PATH] = L"C:\\Users\\Public\\A06_3a_Logon_Triggered_Scheduled_Task_SampleApp_log.txt";
+    wchar_t logPath[MAX_PATH] = L"C:\\Users\\Public\\A06_3a_COM_Logon_Triggered_Scheduled_Task_SampleApp_log.txt";
 
     // Fetch the current local system time
     time_t rawTime;
@@ -33,7 +33,7 @@ void WriteBeaconLog(const wchar_t *message)
 int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow)
 {
     // Updated initial execution log string to accurately describe the execution context
-    WriteBeaconLog(L"SampleApp initialized successfully via A06_3a Logon-Triggered Scheduled Task.");
+    WriteBeaconLog(L"SampleApp initialized via A06_3a COM Logon-Triggered Scheduled Task.");
 
     // Background worker beacon loop
     while (TRUE)
@@ -42,7 +42,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmd
         Sleep(5000);
 
         // Append an alive notification to prove the task scheduler is keeping the process alive
-        WriteBeaconLog(L"Beacon: A06_3a Logon-Triggered Scheduled Task process is alive and looping.");
+        WriteBeaconLog(L"Beacon: A06_3a COM Logon-Triggered Scheduled Task process is alive and looping.");
     }
 
     return 0;
