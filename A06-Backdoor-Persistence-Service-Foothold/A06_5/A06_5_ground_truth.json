@@ -1,0 +1,220 @@
+{
+    "sample_id": "A06_5",
+    "sample_name": "system_startup_rdp_foothold_persistence",
+    "dataset": "A",
+    "dataset_type": "controlled",
+    "behavior_class": "A06",
+    "behavior_class_name": "Backdoor Persistence Service Foothold Behavior Class",
+    "source_repository": "https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A06-Backdoor-Persistence-Service-Foothold/A06_5",
+    "language": "C++",
+    "platform": "Windows",
+    "build_architecture": "x64",
+    "primary_behavior": "persistence",
+    "technique": "startup_folder_persistence_with_rdp_foothold",
+    "subtechnique": "system_startup_folder_rdp_account_backdoor",
+    "execution_model": "startup_triggered_execution",
+    "description": "Creates persistence by copying itself into the system-wide Startup folder. When executed from the Startup folder, the sample creates or verifies a local account, adds it to the Administrators group, hides it from the Windows login UI, enables Remote Desktop, disables Network Level Authentication, and enables the Remote Desktop firewall rule group to simulate a controlled RDP foothold.",
+    "components": {
+        "persistence_installer": {
+            "filename": "A06_5_SystemStartup_RDP_Foothold.exe",
+            "role": "copies itself into the All Users Startup folder and, upon startup-folder execution, configures a controlled RDP foothold through account, registry, RDP, NLA, and firewall modifications",
+            "source_origin": "custom controlled implementation"
+        },
+        "persisted_payload": {
+            "filename": "A06_5_RDP_backdoor.exe",
+            "role": "self-copied executable staged in the system-wide Startup folder that performs foothold configuration when launched by Windows startup processing",
+            "payload_type": "controlled_rdp_foothold_configuration_payload",
+            "source_origin": "custom controlled implementation"
+        }
+    },
+    "key_apis": {
+        "persistence_installer": [
+            "GetModuleFileNameW",
+            "SHGetFolderPathW",
+            "CopyFileW",
+            "NetUserAdd",
+            "NetLocalGroupAddMembers",
+            "RegCreateKeyExW",
+            "RegOpenKeyExW",
+            "RegSetValueExW",
+            "RegCloseKey",
+            "CoInitializeEx",
+            "CoCreateInstance",
+            "INetFwPolicy2::EnableRuleGroup",
+            "SysAllocString",
+            "SysFreeString",
+            "CoUninitialize"
+        ]
+    },
+    "persistence_behavior": {
+        "persistence_type": "startup_folder",
+        "startup_folder_type": "system_wide_all_users_startup",
+        "startup_folder_csidl": "CSIDL_COMMON_STARTUP",
+        "startup_folder_path": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Startup",
+        "persisted_filename": "A06_5_RDP_backdoor.exe",
+        "persisted_path": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\A06_5_RDP_backdoor.exe",
+        "trigger": "system_startup_or_user_logon",
+        "trigger_type": "startup_folder_execution",
+        "execution_context": "interactive_user_or_startup_processing_context",
+        "requires_admin": true,
+        "survives_reboot": true,
+        "scope": "system_wide"
+    },
+    "foothold_behavior": {
+        "foothold_type": "rdp_access_configuration",
+        "local_user_created": "backdoor",
+        "local_user_password": "P@ssw0rd123!",
+        "local_group_modified": "Administrators",
+        "password_never_expires": true,
+        "hidden_login_account_registry_path": "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\\SpecialAccounts\\UserList",
+        "hidden_login_account_value": "backdoor",
+        "hidden_login_account_data": 0,
+        "rdp_enable_registry_path": "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server",
+        "rdp_enable_registry_value": "fDenyTSConnections",
+        "rdp_enable_registry_data": 0,
+        "nla_registry_path": "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\WinStations\\RDP-Tcp",
+        "nla_registry_value": "UserAuthentication",
+        "nla_registry_data": 0,
+        "firewall_rule_group": "Remote Desktop",
+        "firewall_rule_group_enabled": true
+    },
+    "payload_behavior": {
+        "marker_path": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\A06_5_RDP_backdoor.exe",
+        "confirmation_artifact": "startup-folder executable, local account, registry modifications, and firewall/RDP configuration changes",
+        "execution_delay_ms": 0,
+        "writes_marker_file": false,
+        "emits_debug_string": false,
+        "destructive_actions": false,
+        "secondary_payload_downloaded": false,
+        "command_execution": false,
+        "remote_access_configuration": true
+    },
+    "expected_static_signals": {
+        "persistence_installer": [
+            "GetModuleFileNameW current executable path discovery",
+            "SHGetFolderPathW usage with CSIDL_COMMON_STARTUP",
+            "CopyFileW self-copy behavior",
+            "hardcoded persisted filename A06_5_RDP_backdoor.exe",
+            "hardcoded local username backdoor",
+            "hardcoded local account password string",
+            "NetUserAdd local account creation",
+            "NetLocalGroupAddMembers administrator group modification",
+            "Winlogon SpecialAccounts UserList registry path string",
+            "Terminal Server fDenyTSConnections registry value string",
+            "RDP-Tcp UserAuthentication registry value string",
+            "CoCreateInstance usage with CLSID_NetFwPolicy2",
+            "INetFwPolicy2 firewall rule group modification",
+            "Remote Desktop firewall rule group string"
+        ]
+    },
+    "expected_dynamic_signals": {
+        "registry": [
+            "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\\SpecialAccounts\\UserList may be created",
+            "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\\SpecialAccounts\\UserList\\backdoor is set to 0",
+            "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\fDenyTSConnections is set to 0",
+            "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\WinStations\\RDP-Tcp\\UserAuthentication is set to 0"
+        ],
+        "process": [
+            "A06_5_SystemStartup_RDP_Foothold.exe runs from original execution location",
+            "specimen copies itself to the system-wide Startup folder",
+            "A06_5_RDP_backdoor.exe executes from the Startup folder after reboot or logon",
+            "startup-folder execution performs account, registry, RDP, NLA, and firewall modifications"
+        ],
+        "file_system": [
+            "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\A06_5_RDP_backdoor.exe is created",
+            "persisted executable remains in the All Users Startup folder across reboot"
+        ],
+        "account": [
+            "local user account backdoor is created or verified",
+            "backdoor account is added to the local Administrators group",
+            "backdoor account is configured with non-expiring password flag"
+        ],
+        "host": [
+            "Remote Desktop is enabled through Terminal Server registry configuration",
+            "Network Level Authentication requirement is disabled for RDP-Tcp",
+            "Windows Firewall Remote Desktop rule group is enabled",
+            "Sysmon Event ID 1 may capture initial execution and startup-folder execution",
+            "Sysmon Event ID 11 may capture file creation in the Startup folder",
+            "Windows Security logs may record local account creation and group membership changes"
+        ],
+        "network": [
+            "RDP service exposure may become available on TCP port 3389",
+            "Remote Desktop firewall rules are enabled",
+            "no beaconing traffic is generated",
+            "no DNS command channel is used",
+            "no HTTP or HTTPS traffic is required"
+        ]
+    },
+    "code_placement": "Startup-folder persistence staging and RDP foothold configuration are implemented in a single C++ executable. The first execution copies the binary to the All Users Startup folder, while later startup-folder execution performs account, registry, RDP, NLA, and firewall modifications.",
+    "execution_trigger": "The installer executes manually. The persisted copy executes automatically during system startup or user logon through All Users Startup folder processing.",
+    "execution_target": "System-wide Startup folder, local account database, Winlogon registry configuration, Terminal Server registry configuration, RDP-Tcp configuration, and Windows Firewall Remote Desktop rule group.",
+    "semantic_meaning": "Demonstrates a startup-folder persistence mechanism combined with RDP foothold configuration, where a persisted executable survives reboot and configures local access artifacts commonly associated with backdoor-style remote access persistence.",
+    "mitre_attack_mapping": {
+        "tactic": "Persistence",
+        "technique_id": "T1547",
+        "technique_name": "Boot or Logon Autostart Execution",
+        "subtechnique_id": "T1547.001",
+        "subtechnique_name": "Registry Run Keys / Startup Folder",
+        "additional_mappings": [
+            {
+                "tactic": "Persistence",
+                "technique_id": "T1136",
+                "technique_name": "Create Account",
+                "subtechnique_id": "T1136.001",
+                "subtechnique_name": "Local Account"
+            },
+            {
+                "tactic": "Lateral Movement",
+                "technique_id": "T1021",
+                "technique_name": "Remote Services",
+                "subtechnique_id": "T1021.001",
+                "subtechnique_name": "Remote Desktop Protocol"
+            },
+            {
+                "tactic": "Defense Evasion",
+                "technique_id": "T1562",
+                "technique_name": "Impair Defenses",
+                "subtechnique_id": "T1562.004",
+                "subtechnique_name": "Disable or Modify System Firewall"
+            },
+            {
+                "tactic": "Persistence",
+                "technique_id": "T1098",
+                "technique_name": "Account Manipulation"
+            }
+        ],
+        "note": "System-wide Startup folder persistence paired with local account creation, RDP enablement, login-screen account hiding, NLA modification, and firewall rule modification."
+    },
+    "control_notes": {
+        "benign_intent": true,
+        "network_required": false,
+        "persistence": true,
+        "credential_access": false,
+        "destructive_actions": false,
+        "command_execution": false,
+        "command_polling": false,
+        "payload_download": false,
+        "interactive_channel": false,
+        "remote_access_configuration": true,
+        "payload_effect": "creates startup-folder persistence and configures controlled RDP foothold artifacts",
+        "payload_staged_to_disk": true,
+        "cleanup_supported": false
+    },
+    "success_conditions": [
+        "installer resolves the All Users Startup folder using SHGetFolderPathW",
+        "installer copies itself to C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\A06_5_RDP_backdoor.exe",
+        "persisted executable remains present in the system-wide Startup folder",
+        "system reboots or user logs on",
+        "persisted executable runs from the Startup folder",
+        "local user account backdoor is created or already exists",
+        "backdoor account is added to the local Administrators group",
+        "backdoor account is hidden from the Windows Welcome/Login screen by registry value",
+        "fDenyTSConnections is set to 0",
+        "UserAuthentication is set to 0",
+        "Remote Desktop firewall rule group is enabled",
+        "RDP foothold configuration completes",
+        "no payload is downloaded",
+        "no code injection occurs",
+        "no beaconing or command polling occurs"
+    ]
+}

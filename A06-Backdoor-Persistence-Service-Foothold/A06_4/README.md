@@ -4,37 +4,45 @@
 
 Creates persistent execution on the Windows analysis VM by
 registering a permanent Windows Management Instrumentation (WMI)
-event subscription that automatically launches a payload when a
-configured system event condition is satisfied.
+event subscription.
 
-The specimen demonstrates WMI-based persistence commonly associated
-with advanced backdoors, remote access trojans, loaders, and stealthy
-long-term foothold malware that attempts to avoid traditional startup
-artifacts such as registry Run-keys, services, or visible scheduled tasks.
+The specimen demonstrates event-triggered persistence commonly
+associated with advanced malware, backdoors, and long-term
+foothold mechanisms that seek to execute payloads without relying
+on traditional startup folders, Run keys, services, or scheduled
+tasks.
 
-The sample leverages the WMI permanent event subscription framework
-through the creation of:
+Unlike logon-triggered or time-based persistence techniques,
+this sample leverages a permanent WMI event subscription that
+monitors a specific registry value and launches a payload when
+the configured event condition is satisfied.
 
-* An event filter
-* An event consumer
-* A filter-to-consumer binding
+The WMI subscription consists of:
 
-Together, these components create a persistent event-driven execution
-chain managed internally by the WMI infrastructure.
+* A permanent `__EventFilter`
+* A `CommandLineEventConsumer`
+* A `__FilterToConsumerBinding`
 
-When the configured trigger condition occurs, WMI automatically launches
-the following payload executable:
+The event filter monitors:
 
-```text id="xt6r8q"
+```text
+HKLM\SOFTWARE\A06_4_Test
+```
+
+for modifications to the registry value:
+
+```text
+Trigger
+```
+
+When the monitored value changes, the WMI subsystem launches:
+
+```text
 C:\Users\Public\A06_4_marker.exe
 ```
 
-This demonstrates a persistence pattern frequently used for stealth,
-delayed execution, event-driven activation, and reduced visibility
-within traditional startup persistence monitoring tools.
-
-The persistence payload itself is intentionally benign and exists
-only to generate controlled forensic artifacts for dynamic analysis.
+The persistence payload is intentionally benign and exists only
+to generate controlled forensic artifacts for dynamic analysis.
 
 ---
 
@@ -42,99 +50,206 @@ only to generate controlled forensic artifacts for dynamic analysis.
 
 The payload behavior is the execution of:
 
-```text id="q2f6hy"
+```text
 A06_4_marker.exe
 ```
 
-after the configured WMI event trigger condition is satisfied.
+when the configured WMI event subscription is triggered.
 
-When executed, the marker application:
+When executed, the payload application:
 
 * Collects execution metadata
-* Determines its own process path
-* Captures execution timestamp information
-* Writes a persistence confirmation artifact to:
+* Records the current timestamp
+* Records the executing process identifier (PID)
+* Records the executable path
+* Writes telemetry to:
 
-```text id="g7m4pk"
+```text
 C:\Users\Public\A06_4_WMI_PERSIST_OK.txt
 ```
 
-The artifact contains:
+Example output:
 
-* Timestamp
-* Process ID
-* Process path
-* WMI execution confirmation marker
-
-Example artifact contents include:
-
-```text id="h2t7mv"
+```text
 THESIS_A06_4_WMI_TRIGGERED
-Timestamp: 2026-05-25 18:42:10
-PID: 1234
+
+Timestamp: 2026-06-12 14:00:00
+PID: 4321
 ProcessPath: C:\Users\Public\A06_4_marker.exe
 ```
 
-The marker additionally emits a debug confirmation string using:
+The payload additionally emits:
 
-```text id="d1x8sq"
+```text
+THESIS_A06_4_WMI_TRIGGERED
+```
+
+through:
+
+```text
 OutputDebugStringA()
 ```
 
-No additional payloads are downloaded, injected, staged, or executed.
+No additional payloads are downloaded, injected, or executed.
 
 ---
 
 ## To Execute A06_4_wmi_persistence
 
-### Register the WMI Persistence Components
+### Register the WMI Subscription
 
-```powershell id="m4t2qj"
+```powershell
 .\A06-Backdoor-Persistence-Service-Foothold\A06_4\bin\A06_4_wmi_persistence.exe
 ```
 
-### Verify WMI Subscription Components
+During installation the specimen will:
 
-```powershell id="v8s0fp"
+1. Create the registry test key
+
+```text
+HKLM\SOFTWARE\A06_4_Test
+```
+
+2. Initialize:
+
+```text
+Trigger = INITIAL
+```
+
+3. Create the WMI Event Filter
+
+4. Create the CommandLineEventConsumer
+
+5. Create the Filter-To-Consumer Binding
+
+6. Automatically modify:
+
+```text
+Trigger = A06_4_FIRE
+```
+
+to validate the persistence mechanism.
+
+---
+
+### Verify Persistence Artifacts
+
+Open PowerShell as Administrator and inspect the registered
+WMI objects:
+
+#### Event Filter
+
+```powershell
 Get-WmiObject -Namespace root\subscription -Class __EventFilter
 ```
 
-```powershell id="n5d4uk"
+#### Event Consumer
+
+```powershell
 Get-WmiObject -Namespace root\subscription -Class CommandLineEventConsumer
 ```
 
-```powershell id="r1w9ec"
+#### Filter Binding
+
+```powershell
 Get-WmiObject -Namespace root\subscription -Class __FilterToConsumerBinding
 ```
 
-### Trigger Persistence
+Expected object names:
 
-Trigger the configured WMI event condition based on the implementation
-logic used within the sample.
+```text
+A06_4_RegistryFilter
+A06_4_RegistryConsumer
+```
+
+---
+
+### Verify Payload Execution
+
+Inspect:
+
+```text
+C:\Users\Public\A06_4_WMI_PERSIST_OK.txt
+```
+
+Successful execution indicates that the WMI event was received
+and the payload launched correctly.
+
+---
+
+## Cleanup
+
+The specimen supports automated cleanup.
+
+Execute:
+
+```powershell
+.\A06_4_wmi_persistence.exe /cleanup
+```
+
+or:
+
+```powershell
+.\A06_4_wmi_persistence.exe -u
+```
+
+Cleanup removes:
+
+* `__FilterToConsumerBinding`
+* `__EventFilter`
+* `CommandLineEventConsumer`
+* Registry test key:
+
+```text
+HKLM\SOFTWARE\A06_4_Test
+```
 
 ---
 
 ## Expected Persistence Artifacts
 
-### WMI Permanent Event Subscription Components
+### WMI Event Filter
 
-```text id="k3v7an"
+```text
+Name: A06_4_RegistryFilter
+Class: __EventFilter
 Namespace: root\subscription
-Components:
-- __EventFilter
-- CommandLineEventConsumer
-- __FilterToConsumerBinding
 ```
 
-### WMI Payload
+### WMI Event Consumer
 
-```text id="u5h9zr"
+```text
+Name: A06_4_RegistryConsumer
+Class: CommandLineEventConsumer
+```
+
+### WMI Binding
+
+```text
+Class: __FilterToConsumerBinding
+```
+
+### Registry Trigger Location
+
+```text
+HKLM\SOFTWARE\A06_4_Test
+```
+
+### Registry Value
+
+```text
+Trigger
+```
+
+### Payload Executable
+
+```text
 C:\Users\Public\A06_4_marker.exe
 ```
 
 ### Dynamic Analysis Artifact
 
-```text id="c6p2ls"
+```text
 C:\Users\Public\A06_4_WMI_PERSIST_OK.txt
 ```
 
@@ -142,86 +257,83 @@ C:\Users\Public\A06_4_WMI_PERSIST_OK.txt
 
 #########################################################################
 
-# High-Level WMI Event Subscription Persistence Flow
+## High-Level WMI Event Subscription Persistence Flow
 
-1. Initialize the WMI persistence workflow
-
-2. Connect to the WMI management infrastructure
-
-3. Access the WMI subscription namespace:
+1. Connect to:
 
    ```text
    root\subscription
    ```
 
-4. Create a permanent WMI event filter object:
+2. Create permanent WMI Event Filter:
 
    ```text
-   __EventFilter
+   A06_4_RegistryFilter
    ```
 
-5. Configure the WMI event query and trigger condition
-
-6. Create a WMI command execution consumer:
+3. Configure WQL query:
 
    ```text
-   CommandLineEventConsumer
+   SELECT * FROM RegistryValueChangeEvent
+   WHERE Hive='HKEY_LOCAL_MACHINE'
+   AND KeyPath='SOFTWARE\\A06_4_Test'
+   AND ValueName='Trigger'
    ```
 
-7. Configure the payload executable path:
+4. Create CommandLineEventConsumer:
+
+   ```text
+   A06_4_RegistryConsumer
+   ```
+
+5. Configure consumer action:
 
    ```text
    C:\Users\Public\A06_4_marker.exe
    ```
 
-8. Create a filter-to-consumer binding:
+6. Create:
 
    ```text
    __FilterToConsumerBinding
    ```
 
-9. Associate the event filter with the execution consumer
+7. Persistence registration completes
 
-10. Register all persistence components within the WMI repository
+8. WMI stores subscription objects
 
-11. Exit the installer process after successful WMI registration
+9. Registry value changes:
 
-12. Wait for the configured WMI trigger condition
+   ```text
+   HKLM\SOFTWARE\A06_4_Test\Trigger
+   ```
 
-13. Detect the subscribed event through the WMI event subsystem
+10. WMI detects RegistryValueChangeEvent
 
-14. Automatically launch:
+11. Event Filter evaluates the trigger condition
 
-    ```text
-    C:\Users\Public\A06_4_marker.exe
-    ```
+12. Bound CommandLineEventConsumer activates
 
-15. Execute the payload application under the WMI event execution context
+13. WMI launches:
 
-16. Collect execution metadata:
+```text
+C:\Users\Public\A06_4_marker.exe
+```
 
-    * PID
-    * Timestamp
-    * Process path
+14. Payload executes
 
-17. Write persistence confirmation artifact to:
+15. Marker telemetry is written to disk
 
-    ```text
-    C:\Users\Public\A06_4_WMI_PERSIST_OK.txt
-    ```
+16. Persistence remains active
 
-18. Emit a debug confirmation string using:
+17. Future registry modifications trigger additional executions
 
-    ```text
-    OutputDebugStringA()
-    ```
+18. Persistence survives:
 
-19. Preserve persistence across:
+* Reboots
+* User logoff
+* User logon
+* Service restarts
 
-    * User logoff/logon cycles
-    * System reboots
-    * WMI service restarts
+19. Continues until subscription objects are removed
 
-20. Maintain dormant behavior until the monitored WMI event reoccurs
-
-21. Exit cleanly after artifact generation

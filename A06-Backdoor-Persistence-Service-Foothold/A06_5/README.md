@@ -1,190 +1,340 @@
-# A06_5 System Startup RDP Foothold
+# A06_5 System Startup RDP Foothold Persistence
 
 ## Summary
 
-Establishes persistent remote access capability on the Windows analysis
-VM by combining startup-folder persistence with automated Remote Desktop
-Protocol (RDP) configuration.
+Creates persistent execution on the Windows analysis VM by copying
+itself into the system-wide Startup folder and, upon subsequent
+startup-triggered execution, configuring a controlled Remote Desktop
+Protocol (RDP) foothold.
 
-The specimen demonstrates a foothold-establishment persistence mechanism
-commonly associated with remote access trojans (RATs), post-exploitation
-implants, administrative persistence tooling, and long-term access
-operations where an attacker attempts to maintain interactive system
-access after an initial compromise.
+The specimen demonstrates a persistence-and-access foothold pattern
+commonly associated with backdoors that attempt to maintain access
+across reboots by combining startup-folder persistence with local
+account creation, Remote Desktop enablement, login-screen account
+concealment, and firewall rule modification.
 
-The sample operates in two distinct phases:
-
-1. Installation into the system-wide startup folder
-2. Automated remote access configuration during subsequent execution
-
-The startup persistence location used by the specimen is:
+Unlike scheduled-task or WMI-based persistence techniques, this
+sample leverages the All Users Startup folder:
 
 ```text
 C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup
 ```
 
-By placing a copy of itself into the global startup directory, the
-sample ensures execution whenever a user logs onto the system.
+The specimen uses a two-phase execution model:
 
-When executed from the persistence location, the specimen performs
-multiple system modifications that collectively establish a durable
-remote-access foothold.
+* Phase 1 copies the executable into the system-wide Startup folder
+* Phase 2 executes from Startup and configures the RDP foothold
 
-These actions include:
+The persisted executable is staged as:
 
-* Local account creation
-* Administrative group membership assignment
-* User-account concealment from the Windows logon UI
-* Remote Desktop enablement
-* Network Level Authentication (NLA) disabling
-* Firewall rule activation for Remote Desktop access
+```text
+A06_5_RDP_backdoor.exe
+```
 
-No payload downloading, code injection, process hollowing, shellcode
-execution, network beaconing, or command-and-control functionality is
-performed.
-
-The sample exists solely to generate controlled persistence and system
-configuration artifacts for malware analysis and reverse-engineering
-research.
+The persistence and foothold behavior is intentionally controlled
+for malware-analysis laboratory use.
 
 ---
 
-## Persistence Summary
+## Payload Summary
 
-### Initial Installation Phase
-
-When executed outside the system startup directory, the specimen copies
-itself into:
+The payload behavior is the execution of:
 
 ```text
-C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup\A06_5_RDP_Foothold.exe
+A06_5_RDP_backdoor.exe
 ```
 
-This establishes startup-folder persistence for all users of the system.
+from the system-wide Startup folder after reboot or user logon.
 
-The initial installer execution then exits.
+When executed from its original location, the specimen:
+
+* Resolves its current executable path
+* Resolves the All Users Startup folder path
+* Copies itself into the system-wide Startup folder
+* Exits after staging the persisted copy
+
+When executed from the Startup folder, the specimen:
+
+* Creates or verifies a local user account
+* Adds the account to the local Administrators group
+* Hides the account from the Windows Welcome/Login UI
+* Enables Remote Desktop connections
+* Disables Network Level Authentication for RDP
+* Enables the Windows Firewall Remote Desktop rule group
+
+The controlled account configured by the sample is:
+
+```text
+Username: backdoor
+Password: P@ssw0rd123!
+```
+
+The persisted executable path is expected to be:
+
+```text
+C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup\A06_5_RDP_backdoor.exe
+```
+
+No payloads are downloaded, injected, or unpacked.
 
 ---
 
 ## To Execute A06_5_SystemStartup_RDP_Foothold
 
-### Initial Installation
+### Stage the Startup Persistence Copy
 
-Execute the specimen with administrative privileges:
+Run from an elevated PowerShell prompt on the Windows analysis VM:
 
 ```powershell
 .\A06-Backdoor-Persistence-Service-Foothold\A06_5\bin\A06_5_SystemStartup_RDP_Foothold.exe
 ```
 
-The executable should copy itself into:
+During the first execution, the specimen copies itself to:
 
 ```text
-C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup
+C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup\A06_5_RDP_backdoor.exe
 ```
+
+---
+
+### Trigger Startup Execution
+
+Reboot the Windows analysis VM or log off and log back in.
+
+When the copied executable runs from the Startup folder, it executes
+the RDP foothold configuration logic.
 
 ---
 
 ### Verify Startup Persistence
 
+Check the All Users Startup folder:
+
 ```powershell
-Get-ChildItem "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup"
+dir "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup"
 ```
 
-Expected output should include:
+Expected persisted file:
 
 ```text
-A06_5_RDP_Foothold.exe
+A06_5_RDP_backdoor.exe
 ```
+
+---
+
+### Verify Local Account Creation
+
+```powershell
+Get-LocalUser backdoor
+```
+
+Verify local group membership:
+
+```powershell
+net localgroup Administrators
+```
+
+Expected account:
+
+```text
+backdoor
+```
+
+---
+
+### Verify Hidden Login Account Registry Artifact
+
+Inspect:
+
+```powershell
+reg query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\SpecialAccounts\UserList"
+```
+
+Expected value:
+
+```text
+backdoor    REG_DWORD    0x0
+```
+
+---
+
+### Verify Remote Desktop Configuration
+
+Check whether Remote Desktop connections are enabled:
+
+```powershell
+reg query "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections
+```
+
+Expected value:
+
+```text
+fDenyTSConnections    REG_DWORD    0x0
+```
+
+Check Network Level Authentication configuration:
+
+```powershell
+reg query "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v UserAuthentication
+```
+
+Expected value:
+
+```text
+UserAuthentication    REG_DWORD    0x0
+```
+
+---
+
+### Verify Firewall Rule Group
+
+```powershell
+netsh advfirewall firewall show rule group="Remote Desktop"
+```
+
+The Remote Desktop firewall rule group should be enabled.
 
 ---
 
 ## Expected Persistence Artifacts
 
-### Startup Persistence
+### Startup Folder Persistence
 
 ```text
-C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup\A06_5_RDP_Foothold.exe
+C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup\A06_5_RDP_backdoor.exe
+```
+
+### Local User Account
+
+```text
+Username: backdoor
+Privilege: Local user
+Group Membership: Administrators
+Password Expiration: Disabled
+```
+
+### Hidden Account Registry Location
+
+```text
+HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\SpecialAccounts\UserList
+```
+
+### Hidden Account Registry Value
+
+```text
+backdoor = 0
+```
+
+### Remote Desktop Enablement
+
+```text
+HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\fDenyTSConnections = 0
+```
+
+### NLA Configuration
+
+```text
+HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp\UserAuthentication = 0
+```
+
+### Firewall Rule Group
+
+```text
+Remote Desktop
 ```
 
 ---
 
 #########################################################################
 
-# High-Level System Startup RDP Foothold Flow
+## High-Level System Startup RDP Foothold Persistence Flow
 
-1. Initialize execution
-
-2. Determine current executable location
-
-3. Resolve the system-wide startup directory:
+1. Resolve current executable path using:
 
    ```text
-   C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup
+   GetModuleFileNameW()
    ```
 
-4. Determine whether execution originated from the startup folder
+2. Resolve All Users Startup folder using:
 
-5. If not executing from the startup folder:
+   ```text
+   SHGetFolderPathW()
+   CSIDL_COMMON_STARTUP
+   ```
 
-   * Copy executable into the startup directory
-   * Exit installer process
+3. Determine whether execution is occurring from the Startup folder
 
-6. Wait for user logon or system reboot
+4. If not running from Startup, copy the executable to:
 
-7. Automatically launch from startup persistence location
+   ```text
+   C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup\A06_5_RDP_backdoor.exe
+   ```
 
-8. Create local account:
+5. Initial staging execution completes
+
+6. System reboots or user logs on
+
+7. Windows launches executable from the system-wide Startup folder
+
+8. Specimen detects Startup-folder execution context
+
+9. Create or verify local user account:
 
    ```text
    backdoor
    ```
 
-9. Configure password attributes
+10. Configure account password to never expire
 
-10. Add account to:
+11. Add account to local Administrators group
 
-    ```text
-    Administrators
-    ```
+12. Create or modify hidden account registry path:
 
-11. Create hidden-account registry configuration:
+```text
+HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\SpecialAccounts\UserList
+```
 
-    ```text
-    SpecialAccounts\UserList
-    ```
+13. Set hidden account value:
 
-12. Conceal account from standard Windows logon interfaces
+```text
+backdoor = 0
+```
 
-13. Enable Remote Desktop access
+14. Enable Remote Desktop by setting:
 
-14. Configure:
+```text
+fDenyTSConnections = 0
+```
 
-    ```text
-    fDenyTSConnections = 0
-    ```
+15. Disable Network Level Authentication by setting:
 
-15. Disable Network Level Authentication
+```text
+UserAuthentication = 0
+```
 
-16. Configure:
+16. Initialize COM runtime
 
-    ```text
-    UserAuthentication = 0
-    ```
+17. Instantiate Windows Firewall policy object:
 
-17. Initialize COM firewall management interfaces
+```text
+INetFwPolicy2
+```
 
-18. Enable:
+18. Enable firewall rule group:
 
-    ```text
-    Remote Desktop
-    ```
+```text
+Remote Desktop
+```
 
-    firewall rule group
+19. RDP foothold configuration completes
 
-19. Establish a persistent remote-access foothold across:
+20. Persistence survives:
 
-    * User logoff/logon cycles
-    * System reboots
-    * Administrative sessions
+* Reboots
+* User logoff
+* User logon
+* Startup folder processing
 
-20. Exit cleanly after configuration is complete
+21. Foothold remains until the startup artifact, local account,
+    registry changes, and firewall/RDP settings are removed
+

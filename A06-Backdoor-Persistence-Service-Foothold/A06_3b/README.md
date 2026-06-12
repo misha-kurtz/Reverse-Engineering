@@ -1,37 +1,42 @@
-# A06_3b Event-Triggered Scheduled Task Persistence
+Here’s a **clean, fully aligned README** for `A06_3b_COM_event_persist` that matches your dataset style and clearly differentiates it from 3a/3c/3d.
+
+---
+
+# A06_3b COM Event-Triggered Scheduled Task Persistence
 
 ## Summary
 
 Creates persistent execution on the Windows analysis VM by
-registering a Windows Scheduled Task configured to trigger
-when a specific system event occurs.
+registering a Windows Scheduled Task using the **Task Scheduler 2.0 COM API**,
+configured to trigger based on a **specific system event condition**.
 
-The specimen demonstrates event-driven scheduled-task persistence
-commonly associated with backdoors, loaders, remote access trojans,
-and long-term foothold malware that avoids relying solely on simple
-startup triggers such as Run-keys or standard logon execution.
+The specimen demonstrates event-driven scheduled-task persistence commonly
+associated with advanced malware, backdoors, and stealth persistence mechanisms
+that avoid predictable execution patterns such as logon or time-based triggers.
 
-Unlike traditional scheduled-task persistence that executes at boot
-or user logon, this sample leverages Task Scheduler event subscriptions
-to launch a payload only after a targeted behavioral condition occurs.
+Unlike logon-triggered or recurring tasks, this sample leverages the Windows
+Event Log subsystem to define a trigger condition using an XML query.
+The task is configured to execute when a **process creation event (Event ID 4688)**
+matches a specific target:
 
-In this controlled specimen, the scheduled task is configured to
-trigger when Mozilla Firefox is launched, simulating malware that
-activates only after specific user activity or environmental conditions
-are observed.
+```text
+C:\Program Files\Mozilla Firefox\firefox.exe
+```
 
 The scheduled task launches the following payload:
 
-```text id="tv7qhl"
+```text
 C:\Users\Public\A06_3b_SampleApp.exe
 ```
 
-This demonstrates a persistence pattern commonly used to reduce
-visibility, delay execution, evade automated analysis, or synchronize
-malicious activity with expected user behavior.
+The task executes under the **SYSTEM account**, providing elevated execution
+context while remaining conditionally triggered by system activity.
 
-The persistence payload itself is intentionally benign and exists
-only to generate controlled forensic artifacts for dynamic analysis.
+This technique demonstrates how attackers can achieve **highly targeted and
+low-noise persistence execution** tied to user behavior.
+
+The persistence payload itself is intentionally benign and exists only to
+generate controlled forensic artifacts for dynamic analysis.
 
 ---
 
@@ -39,61 +44,64 @@ only to generate controlled forensic artifacts for dynamic analysis.
 
 The payload behavior is the execution of:
 
-```text id="j3q11x"
+```text
 A06_3b_SampleApp.exe
 ```
 
-after the configured event-trigger condition is satisfied.
-
-In this sample, the trigger condition is the launch of Firefox,
-which causes the Windows Task Scheduler service to automatically
-execute the payload application.
+after the configured event trigger condition is satisfied.
 
 When executed, the payload application:
 
 * Creates a persistent beacon-style logging loop
-* Runs continuously within the interactive user session
+* Runs continuously after event-triggered execution
 * Writes periodic timestamped status messages to:
 
-```text id="72aj6z"
-C:\Users\Public\A06_3b_Scheduled_Task_SampleApp_log.txt
+```text
+C:\Users\Public\A06_3b_COM_Event_Triggered_Scheduled_Task_SampleApp_log.txt
 ```
 
 The log entries confirm:
 
 * Successful event-triggered execution
-* Task Scheduler activation
-* User-session payload launch
+* COM-based scheduled task persistence activation
 * Continued execution over time
+* Trigger-based persistence behavior
 
 Example log messages include:
 
-```text id="mjlwm7"
-SampleApp initialized successfully via A06_3b Event-Triggered (Firefox Launch) Scheduled Task.
-Beacon: A06_3b Event-Triggered Task process is alive and looping.
+```text
+SampleApp initialized successfully via A06_3b COM Event-Triggered (Firefox Launch) Scheduled Task.
+Beacon: A06_3b COM Event-Triggered Task process is alive and looping.
 ```
 
 No additional payloads are downloaded, injected, staged, or executed.
 
 ---
 
-## To Execute A06_3b_event_trigger_schtask_persist
+## To Execute A06_3b_COM_event_persist
 
 ### Register the Scheduled Task
 
-```powershell id="z5bdha"
-.\A06-Backdoor-Persistence-Service-Foothold\A06_3b\bin\A06_3b_event_trigger_schtask_persist.exe
+```powershell
+.\A06-Backdoor-Persistence-Service-Foothold\A06_3b\bin\A06_3b_COM_event_persist.exe
 ```
 
-### Verify Scheduled Task Registration
+### Verify Task Registration
 
-```powershell id="e7mmlk"
-schtasks /query /tn "A06_3b_EventTriggeredPersistence"
+```powershell
+schtasks /query /tn "A06_3b_EventTriggerTask"
 ```
 
 ### Trigger Persistence
 
-Launch Mozilla Firefox on the Windows VM to trigger the scheduled task.
+Launch Firefox on the Windows VM:
+
+```powershell
+"C:\Program Files\Mozilla Firefox\firefox.exe"
+```
+
+This generates a **Security Event ID 4688 (Process Creation)**, which satisfies
+the task’s event trigger condition and causes execution of the payload.
 
 ---
 
@@ -101,86 +109,99 @@ Launch Mozilla Firefox on the Windows VM to trigger the scheduled task.
 
 ### Scheduled Task Registration
 
-```text id="3vr9d8"
-Task Name: A06_3b_EventTriggeredPersistence
-Trigger Type: Event-Based Trigger
-Activation Event: Firefox Launch
+```text
+Task Name: A06_3b_EventTriggerTask
+Trigger Type: Event Trigger (Event ID 4688)
+Execution Context: SYSTEM
+Implementation: Task Scheduler COM API
+```
+
+### Event Trigger Condition
+
+```text
+Event Log: Security
+Event ID: 4688 (Process Creation)
+Filter: NewProcessName = C:\Program Files\Mozilla Firefox\firefox.exe
 ```
 
 ### Scheduled Payload
 
-```text id="7g6i7y"
+```text
 C:\Users\Public\A06_3b_SampleApp.exe
 ```
 
 ### Dynamic Analysis Log Artifact
 
-```text id="k9j4zs"
-C:\Users\Public\A06_3b_Scheduled_Task_SampleApp_log.txt
+```text
+C:\Users\Public\A06_3b_COM_Event_Triggered_Scheduled_Task_SampleApp_log.txt
 ```
 
 ---
 
 #########################################################################
 
-# High-Level Event-Triggered Scheduled Task Persistence Flow
+# High-Level COM Event-Triggered Scheduled Task Persistence Flow
 
-1. Initialize Task Scheduler persistence workflow
+1. Initialize COM library and Task Scheduler interface
 
-2. Configure the scheduled task name:
+2. Instantiate Task Scheduler service via COM
+
+3. Connect to local Task Scheduler instance
+
+4. Open root task folder (`\`)
+
+5. Remove any existing task with the same name
+
+6. Create a new task definition
+
+7. Configure registration metadata (author, description)
+
+8. Create an **event trigger**:
 
    ```text
-   A06_3b_EventTriggeredPersistence
+   TASK_TRIGGER_EVENT
    ```
 
-3. Configure the payload executable path:
+9. Define XML-based event subscription:
 
-   ```text
-   C:\Users\Public\A06_3b_SampleApp.exe
-   ```
+   * Event Log: Security
+   * Event ID: 4688 (process creation)
+   * Filter: firefox.exe execution
 
-4. Configure an event-driven trigger condition based on:
+10. Configure execution action:
 
-   * Firefox process launch activity
-   * Windows event subscription logic
-   * Task Scheduler event monitoring
+```text
+C:\Users\Public\A06_3b_SampleApp.exe
+```
 
-5. Register the scheduled task with the Windows Task Scheduler service
+11. Configure execution context:
 
-6. Store the task definition and event filter configuration
+* Run as SYSTEM
+* Service account logon type
 
-7. Exit the installer process after successful task registration
+12. Register task with Task Scheduler
 
-8. Wait for the monitored trigger event to occur
+13. Exit installer process
 
-9. Detect Firefox launch activity through the configured event trigger
+14. Wait for matching system event
 
-10. Activate the scheduled task automatically
+15. User launches Firefox
 
-11. Launch:
+16. Windows logs Event ID 4688
 
-    ```text
-    C:\Users\Public\A06_3b_SampleApp.exe
-    ```
+17. Task Scheduler evaluates event subscription
 
-12. Execute the payload application inside the interactive desktop session
+18. Trigger condition is satisfied
 
-13. Begin persistent background beacon loop inside the payload application
+19. Scheduled task executes payload
 
-14. Write periodic timestamped execution logs to:
+20. Payload begins persistent beacon loop
 
-    ```text
-    C:\Users\Public\A06_3b_Scheduled_Task_SampleApp_log.txt
-    ```
+21. Write execution telemetry to:
 
-15. Continue execution indefinitely until terminated
+```text
+C:\Users\Public\A06_3b_COM_Event_Triggered_Scheduled_Task_SampleApp_log.txt
+```
 
-16. Preserve persistence across:
+22. Continue execution until terminated
 
-    * User logoff/logon cycles
-    * System reboots
-    * Task Scheduler service restarts
-
-17. Maintain dormant behavior until the monitored trigger event reoccurs
-
-18. Exit cleanly when the payload application is terminated

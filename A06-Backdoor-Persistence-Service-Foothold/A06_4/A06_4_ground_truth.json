@@ -1,0 +1,192 @@
+{
+    "sample_id": "A06_4",
+    "sample_name": "wmi_registry_event_subscription_persistence",
+    "dataset": "A",
+    "dataset_type": "controlled",
+    "behavior_class": "A06",
+    "behavior_class_name": "Backdoor Persistence Service Foothold Behavior Class",
+    "source_repository": "https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A06-Backdoor-Persistence-Service-Foothold/A06_4",
+    "language": "C# and C++",
+    "platform": "Windows",
+    "build_architecture": "x64",
+    "primary_behavior": "persistence",
+    "technique": "wmi_event_subscription_persistence",
+    "subtechnique": "registry_value_change_event_consumer_binding",
+    "execution_model": "event_triggered_execution",
+    "description": "Creates persistence by registering a permanent WMI event subscription in the root\\subscription namespace. The installer creates a registry test key, registers an __EventFilter that monitors a registry value change, creates a CommandLineEventConsumer that launches a benign marker payload, and binds the filter to the consumer through __FilterToConsumerBinding.",
+    "components": {
+        "persistence_installer": {
+            "filename": "A06_4_wmi_persistence.exe",
+            "role": "connects to root\\subscription, creates the registry trigger key, registers a permanent WMI __EventFilter, creates a CommandLineEventConsumer, binds the filter to the consumer, fires a validation registry trigger, and supports cleanup of created artifacts",
+            "source_origin": "custom controlled implementation"
+        },
+        "marker_payload": {
+            "filename": "A06_4_marker.exe",
+            "role": "benign executable launched by the WMI CommandLineEventConsumer to write marker telemetry confirming WMI-triggered execution",
+            "payload_type": "benign_persistence_verification_marker",
+            "source_origin": "custom controlled implementation"
+        }
+    },
+    "key_apis": {
+        "persistence_installer": [
+            "ManagementScope.Connect",
+            "ManagementClass",
+            "ManagementClass.CreateInstance",
+            "ManagementObject.Put",
+            "ManagementObject.Delete",
+            "ManagementObjectSearcher",
+            "ObjectQuery",
+            "Registry.LocalMachine.CreateSubKey",
+            "Registry.LocalMachine.OpenSubKey",
+            "RegistryKey.SetValue",
+            "RegistryKey.Flush",
+            "Registry.LocalMachine.DeleteSubKeyTree"
+        ],
+        "marker_payload": [
+            "GetCurrentProcessId",
+            "GetModuleFileNameA",
+            "GetLocalTime",
+            "CreateFileA",
+            "WriteFile",
+            "CloseHandle",
+            "OutputDebugStringA"
+        ]
+    },
+    "persistence_behavior": {
+        "persistence_type": "wmi_event_subscription",
+        "wmi_namespace": "root\\subscription",
+        "event_namespace": "root\\cimv2",
+        "event_filter_name": "A06_4_RegistryFilter",
+        "consumer_name": "A06_4_RegistryConsumer",
+        "binding_type": "__FilterToConsumerBinding",
+        "consumer_type": "CommandLineEventConsumer",
+        "trigger": "registry_value_change",
+        "trigger_type": "RegistryValueChangeEvent",
+        "wql_query": "SELECT * FROM RegistryValueChangeEvent WHERE Hive='HKEY_LOCAL_MACHINE' AND KeyPath='SOFTWARE\\\\A06_4_Test' AND ValueName='Trigger'",
+        "watched_registry_key": "HKLM\\SOFTWARE\\A06_4_Test",
+        "watched_registry_value": "Trigger",
+        "initial_registry_value": "INITIAL",
+        "trigger_value": "A06_4_FIRE",
+        "action_type": "command_line_event_consumer",
+        "action_path": "C:\\Users\\Public\\A06_4_marker.exe",
+        "requires_admin": true,
+        "survives_reboot": true,
+        "scope": "system_wide",
+        "cleanup_supported": true
+    },
+    "payload_behavior": {
+        "marker_path": "C:\\Users\\Public\\A06_4_marker.exe",
+        "confirmation_artifact": "C:\\Users\\Public\\A06_4_WMI_PERSIST_OK.txt",
+        "execution_delay_ms": 0,
+        "writes_marker_file": true,
+        "emits_debug_string": true,
+        "debug_string": "THESIS_A06_4_WMI_TRIGGERED",
+        "destructive_actions": false,
+        "secondary_payload_downloaded": false,
+        "command_execution": false
+    },
+    "expected_static_signals": {
+        "persistence_installer": [
+            "System.Management namespace usage",
+            "ManagementScope targeting \\\\.\\root\\subscription",
+            "__EventFilter WMI class usage",
+            "CommandLineEventConsumer WMI class usage",
+            "__FilterToConsumerBinding WMI class usage",
+            "RegistryValueChangeEvent WQL query string",
+            "root\\cimv2 EventNamespace configuration",
+            "hardcoded filter name A06_4_RegistryFilter",
+            "hardcoded consumer name A06_4_RegistryConsumer",
+            "hardcoded registry key HKLM\\SOFTWARE\\A06_4_Test",
+            "hardcoded registry value name Trigger",
+            "hardcoded payload path C:\\Users\\Public\\A06_4_marker.exe",
+            "cleanup flag support using /cleanup or -u"
+        ],
+        "marker_payload": [
+            "GetCurrentProcessId usage",
+            "GetModuleFileNameA process path discovery",
+            "GetLocalTime timestamp generation",
+            "CreateFileA marker file creation",
+            "WriteFile telemetry write",
+            "OutputDebugStringA debug marker emission",
+            "hardcoded marker output path C:\\Users\\Public\\A06_4_WMI_PERSIST_OK.txt",
+            "THESIS_A06_4_WMI_TRIGGERED marker string"
+        ]
+    },
+    "expected_dynamic_signals": {
+        "registry": [
+            "HKLM\\SOFTWARE\\A06_4_Test is created",
+            "HKLM\\SOFTWARE\\A06_4_Test\\Trigger is initialized to INITIAL",
+            "HKLM\\SOFTWARE\\A06_4_Test\\Trigger is modified to A06_4_FIRE",
+            "registry value modification triggers WMI event delivery"
+        ],
+        "process": [
+            "A06_4_wmi_persistence.exe runs as installer",
+            "WMI service processes the RegistryValueChangeEvent",
+            "CommandLineEventConsumer launches C:\\Users\\Public\\A06_4_marker.exe",
+            "marker payload executes after registry trigger fires"
+        ],
+        "file_system": [
+            "C:\\Users\\Public\\A06_4_WMI_PERSIST_OK.txt is created",
+            "marker file contains THESIS_A06_4_WMI_TRIGGERED",
+            "marker file contains timestamp, PID, and process path telemetry"
+        ],
+        "host": [
+            "permanent WMI __EventFilter is created in root\\subscription",
+            "permanent WMI CommandLineEventConsumer is created in root\\subscription",
+            "__FilterToConsumerBinding links the filter and consumer",
+            "WMI-Activity Operational logs may record event consumer activity",
+            "Sysmon Event ID 1 may capture marker payload execution",
+            "Sysmon Event ID 11 may capture marker file creation"
+        ],
+        "network": [
+            "no network activity is expected",
+            "no DNS activity is required",
+            "no HTTP or HTTPS traffic is required",
+            "no TCP command channel is opened"
+        ]
+    },
+    "code_placement": "Permanent WMI event subscription creation and cleanup logic are implemented in the C# installer. Execution confirmation is implemented in the C++ marker payload through marker-file telemetry and OutputDebugStringA.",
+    "execution_trigger": "The installer executes manually. The persistence payload executes automatically when the monitored registry value HKLM\\SOFTWARE\\A06_4_Test\\Trigger changes and satisfies the WMI RegistryValueChangeEvent query.",
+    "execution_target": "WMI permanent event subscription subsystem and marker executable at C:\\Users\\Public\\A06_4_marker.exe",
+    "semantic_meaning": "Demonstrates event-driven persistence using a permanent WMI event subscription, where an event filter monitors a registry value change and a bound command-line consumer launches a payload without relying on traditional startup folders, Run keys, services, or scheduled tasks.",
+    "mitre_attack_mapping": {
+        "tactic": "Persistence",
+        "technique_id": "T1546",
+        "technique_name": "Event Triggered Execution",
+        "subtechnique_id": "T1546.003",
+        "subtechnique_name": "Windows Management Instrumentation Event Subscription",
+        "note": "Permanent WMI event subscription persistence using __EventFilter, CommandLineEventConsumer, and __FilterToConsumerBinding."
+    },
+    "control_notes": {
+        "benign_intent": true,
+        "network_required": false,
+        "persistence": true,
+        "credential_access": false,
+        "destructive_actions": false,
+        "command_execution": false,
+        "command_polling": false,
+        "payload_download": false,
+        "interactive_channel": false,
+        "payload_effect": "writes marker-file telemetry confirming WMI-triggered execution",
+        "payload_staged_to_disk": true,
+        "cleanup_supported": true
+    },
+    "success_conditions": [
+        "installer successfully connects to \\\\.\\root\\subscription",
+        "HKLM\\SOFTWARE\\A06_4_Test is created",
+        "Trigger registry value is initialized to INITIAL",
+        "__EventFilter named A06_4_RegistryFilter is created",
+        "CommandLineEventConsumer named A06_4_RegistryConsumer is created",
+        "__FilterToConsumerBinding is created between the filter and consumer",
+        "registry value HKLM\\SOFTWARE\\A06_4_Test\\Trigger is modified to A06_4_FIRE",
+        "WMI RegistryValueChangeEvent fires",
+        "CommandLineEventConsumer launches C:\\Users\\Public\\A06_4_marker.exe",
+        "marker payload writes C:\\Users\\Public\\A06_4_WMI_PERSIST_OK.txt",
+        "marker file contains THESIS_A06_4_WMI_TRIGGERED",
+        "marker file contains timestamp, PID, and process path",
+        "OutputDebugStringA emits THESIS_A06_4_WMI_TRIGGERED",
+        "no network activity or secondary payload execution occurs",
+        "cleanup mode removes the WMI binding, filter, consumer, and test registry key"
+    ]
+}
+

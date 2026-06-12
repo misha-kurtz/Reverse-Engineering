@@ -1,0 +1,172 @@
+{
+    "sample_id": "A06_3b",
+    "sample_name": "com_event_triggered_scheduled_task_persistence",
+    "dataset": "A",
+    "dataset_type": "controlled",
+    "behavior_class": "A06",
+    "behavior_class_name": "Backdoor Persistence Service Foothold Behavior Class",
+    "source_repository": "https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A06-Backdoor-Persistence-Service-Foothold/A06_3b",
+    "language": "C#",
+    "platform": "Windows",
+    "build_architecture": "x64",
+    "primary_behavior": "persistence",
+    "technique": "scheduled_task_persistence",
+    "subtechnique": "com_api_event_triggered_task",
+    "execution_model": "event_triggered_scheduled_execution",
+    "description": "Creates persistence by registering a scheduled task via the Task Scheduler COM API that executes based on a Windows Event Log trigger. The task monitors Security Event ID 4688 (process creation) and executes a marker payload when a specific process (firefox.exe) is launched. The payload writes a controlled artifact confirming persistence execution.",
+    "components": {
+        "persistence_installer": {
+            "filename": "A06_3b_COM_event_persist.exe",
+            "role": "initializes COM via .NET interop, connects to the Task Scheduler service, defines an event-triggered task using an XML subscription filter, and registers the task under SYSTEM context",
+            "source_origin": "custom controlled implementation"
+        },
+        "marker_payload": {
+            "filename": "A06_3b_SampleApp.exe",
+            "role": "benign executable launched when the event trigger condition is satisfied, continuously logging execution to confirm persistence behavior",
+            "payload_type": "benign_persistence_verification_marker",
+            "source_origin": "custom controlled implementation"
+        }
+    },
+    "key_apis": {
+        "persistence_installer": [
+            "Type.GetTypeFromProgID",
+            "Activator.CreateInstance",
+            "Schedule.Service COM object",
+            "TaskScheduler.Connect",
+            "TaskFolder.GetFolder",
+            "TaskFolder.DeleteTask",
+            "TaskService.NewTask",
+            "TaskDefinition.Triggers.Create",
+            "EventTrigger.Subscription (XML query)",
+            "TaskDefinition.Actions.Create",
+            "ExecAction.Path",
+            "TaskFolder.RegisterTaskDefinition"
+        ],
+        "marker_payload": [
+            "Sleep",
+            "time",
+            "localtime",
+            "wcsftime",
+            "_wfopen_s",
+            "fwprintf",
+            "fclose"
+        ]
+    },
+    "persistence_behavior": {
+        "persistence_type": "scheduled_task",
+        "task_name": "A06_3b_EventTriggerTask",
+        "task_folder": "\\",
+        "trigger": "event_based",
+        "trigger_type": "TASK_TRIGGER_EVENT",
+        "event_log": "Security",
+        "event_id": 4688,
+        "event_filter": "NewProcessName = C:\\Program Files\\Mozilla Firefox\\firefox.exe",
+        "execution_context": "SYSTEM",
+        "logon_type": "TASK_LOGON_SERVICE_ACCOUNT",
+        "action_type": "TASK_ACTION_EXEC",
+        "action_path": "C:\\Users\\Public\\A06_3b_SampleApp.exe",
+        "requires_admin": true,
+        "survives_reboot": true,
+        "scope": "system_wide"
+    },
+    "payload_behavior": {
+        "marker_path": "C:\\Users\\Public\\A06_3b_SampleApp.exe",
+        "confirmation_artifact": "C:\\Users\\Public\\A06_3b_COM_Event_Triggered_Scheduled_Task_SampleApp_log.txt",
+        "execution_delay_ms": 0,
+        "writes_marker_file": true,
+        "emits_debug_string": false,
+        "destructive_actions": false,
+        "secondary_payload_downloaded": false,
+        "command_execution": false
+    },
+    "expected_static_signals": {
+        "persistence_installer": [
+            "Schedule.Service COM object usage",
+            "Type.GetTypeFromProgID invocation",
+            "Activator.CreateInstance dynamic COM instantiation",
+            "TASK_TRIGGER_EVENT usage",
+            "XML event subscription string referencing Security EventID 4688",
+            "filter for firefox.exe process path",
+            "RegisterTaskDefinition invocation",
+            "hardcoded task name A06_3b_EventTriggerTask",
+            "payload path C:\\Users\\Public\\A06_3b_SampleApp.exe"
+        ],
+        "marker_payload": [
+            "Sleep-based loop for periodic execution",
+            "time and localtime usage",
+            "wcsftime timestamp formatting",
+            "_wfopen_s opening log file",
+            "fwprintf writing log entries",
+            "hardcoded log path C:\\Users\\Public\\A06_3b_COM_Event_Triggered_Scheduled_Task_SampleApp_log.txt"
+        ]
+    },
+    "expected_dynamic_signals": {
+        "registry": [
+            "scheduled task registration stored under Task Scheduler subsystem",
+            "task configured with event-based trigger condition"
+        ],
+        "process": [
+            "A06_3b_COM_event_persist.exe executes as installer",
+            "firefox.exe execution generates Event ID 4688",
+            "Task Scheduler evaluates event trigger",
+            "A06_3b_SampleApp.exe launches after matching event",
+            "marker process runs continuously after trigger"
+        ],
+        "file_system": [
+            "C:\\Users\\Public\\A06_3b_COM_Event_Triggered_Scheduled_Task_SampleApp_log.txt is created",
+            "log file contains timestamped execution entries"
+        ],
+        "host": [
+            "Security Event Log contains Event ID 4688 entries",
+            "Task Scheduler Operational log may record task execution",
+            "task visible via schtasks /query",
+            "task visible in Task Scheduler GUI",
+            "Sysmon Event ID 1 may capture marker process execution"
+        ],
+        "network": [
+            "no network activity is expected",
+            "no DNS activity is required",
+            "no HTTP or HTTPS traffic is required",
+            "no TCP command channel is opened"
+        ]
+    },
+    "code_placement": "COM interop task creation and XML event subscription logic are implemented in the installer executable. Continuous execution logging behavior is implemented in the marker payload executable.",
+    "execution_trigger": "The installer executes manually. The persistence payload executes when a matching Security Event ID 4688 is generated for firefox.exe process creation.",
+    "execution_target": "Task Scheduler event trigger subsystem and marker executable at C:\\Users\\Public\\A06_3b_SampleApp.exe",
+    "semantic_meaning": "Demonstrates advanced event-driven persistence using Task Scheduler COM API, where execution is conditionally triggered by specific system events, reducing noise and increasing stealth compared to logon or time-based persistence.",
+    "mitre_attack_mapping": {
+        "tactic": "Persistence",
+        "technique_id": "T1053",
+        "technique_name": "Scheduled Task/Job",
+        "note": "Event-triggered scheduled task persistence using COM API and Windows Event Log subscription."
+    },
+    "control_notes": {
+        "benign_intent": true,
+        "network_required": false,
+        "persistence": true,
+        "credential_access": false,
+        "destructive_actions": false,
+        "command_execution": false,
+        "command_polling": false,
+        "payload_download": false,
+        "interactive_channel": false,
+        "payload_effect": "writes a controlled log file confirming event-triggered scheduled task execution",
+        "payload_staged_to_disk": true
+    },
+    "success_conditions": [
+        "installer successfully connects to Task Scheduler COM interface",
+        "existing task A06_3b_EventTriggerTask is removed if present",
+        "new task definition is created",
+        "event trigger is configured with Security Event ID 4688",
+        "event filter targets firefox.exe process execution",
+        "task is registered under SYSTEM context",
+        "user launches firefox.exe",
+        "Windows logs Event ID 4688",
+        "Task Scheduler matches event subscription filter",
+        "A06_3b_SampleApp.exe is executed",
+        "marker begins writing log entries",
+        "log file C:\\Users\\Public\\A06_3b_COM_Event_Triggered_Scheduled_Task_SampleApp_log.txt is created",
+        "log file contains repeated timestamped entries confirming execution",
+        "no network activity or secondary payload execution occurs"
+    ]
+}

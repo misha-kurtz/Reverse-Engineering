@@ -1,20 +1,21 @@
-# A06_3a Logon-Triggered Scheduled Task Persistence
+# A06_3a COM Logon-Triggered Scheduled Task Persistence
 
 ## Summary
 
 Creates persistent execution on the Windows analysis VM by
-registering a Windows Scheduled Task configured to trigger
-automatically when a user logs into the system.
+registering a Windows Scheduled Task using the **Task Scheduler 2.0 COM API**,
+configured to trigger automatically upon user logon.
 
-The specimen demonstrates scheduled-task persistence behavior
-commonly associated with backdoors, loaders, remote access trojans,
-and long-term foothold malware that requires reliable execution
-without relying solely on registry Run-keys or Windows services.
+The specimen demonstrates scheduled-task persistence behavior commonly
+associated with backdoors, loaders, and long-term foothold malware that
+requires reliable execution across user logon events without relying on
+traditional Run-key or service-based persistence mechanisms.
 
-The sample leverages the Windows Task Scheduler infrastructure
-to establish persistence through a logon-triggered execution model.
-When a user logs in, the Task Scheduler service automatically launches
-the configured payload application inside the interactive user session.
+Unlike command-line task creation (e.g., `schtasks.exe`), this sample uses
+native COM interfaces (`ITaskService`, `ITaskDefinition`, etc.) to directly
+interact with the Windows Task Scheduler subsystem. This approach is commonly
+used by more advanced malware to avoid simple command-line detection and to
+blend with legitimate system automation.
 
 The scheduled task launches the following payload:
 
@@ -22,13 +23,11 @@ The scheduled task launches the following payload:
 C:\Users\Public\A06_3a_SampleApp.exe
 ```
 
-This demonstrates a common persistence pattern in which malware
-uses Task Scheduler to obtain durable execution across reboots
-and user logons while blending into legitimate administrative
-automation activity already common on Windows systems.
+The task is registered to run under the **SYSTEM account**, providing elevated
+execution context while still triggering based on user logon activity.
 
-The persistence payload itself is intentionally benign and exists
-only to generate controlled forensic artifacts for dynamic analysis.
+The persistence payload itself is intentionally benign and exists only to
+generate controlled forensic artifacts for dynamic analysis.
 
 ---
 
@@ -45,48 +44,48 @@ after a successful user logon event triggers the scheduled task.
 When executed, the payload application:
 
 * Creates a persistent beacon-style logging loop
-* Runs continuously within the interactive user session
+* Runs continuously within the system-triggered execution context
 * Writes periodic timestamped status messages to:
 
 ```text
-C:\Users\Public\A06_3a_Logon_Triggered_Scheduled_Task_SampleApp_log.txt
+C:\Users\Public\A06_3a_COM_Logon_Triggered_Scheduled_Task_SampleApp_log.txt
 ```
 
 The log entries confirm:
 
-* Successful scheduled-task execution
-* User-session payload launch
+* Successful COM-based task execution
+* Logon-triggered persistence activation
 * Continued execution over time
-* Persistence watchdog behavior
+* Scheduled task–driven process persistence
 
 Example log messages include:
 
 ```text
-SampleApp initialized successfully via A06_3a Logon-Triggered Scheduled Task.
-Beacon: A06_3a Logon-Triggered Scheduled Task process is alive and looping.
+SampleApp initialized via A06_3a COM Logon-Triggered Scheduled Task.
+Beacon: A06_3a COM Logon-Triggered Scheduled Task process is alive and looping.
 ```
 
 No additional payloads are downloaded, injected, staged, or executed.
 
 ---
 
-## To Execute A06_3a_schtask_logon_persistence
+## To Execute A06_3a_COM_logon_persist
 
 ### Register the Scheduled Task
 
 ```powershell
-.\A06-Backdoor-Persistence-Service-Foothold\A06_3a\bin\A06_3a_schtask_logon_persistence.exe
+.\A06-Backdoor-Persistence-Service-Foothold\A06_3a\bin\A06_3a_COM_logon_persist.exe
 ```
 
-### Alternative Manual Verification
+### Verify Task Registration
 
 ```powershell
-schtasks /query /tn "A06_3a_LogonPersistence"
+schtasks /query /tn "A06_3a_LogonTask"
 ```
 
 ### Trigger Persistence
 
-Log off and log back into the Windows VM to trigger the task.
+Log off and log back into the Windows VM to trigger execution.
 
 ---
 
@@ -95,8 +94,10 @@ Log off and log back into the Windows VM to trigger the task.
 ### Scheduled Task Registration
 
 ```text
-Task Name: A06_3a_LogonPersistence
-Trigger Type: User Logon
+Task Name: A06_3a_LogonTask
+Trigger Type: Logon Trigger
+Execution Context: SYSTEM
+Implementation: Task Scheduler COM API
 ```
 
 ### Scheduled Payload
@@ -108,69 +109,71 @@ C:\Users\Public\A06_3a_SampleApp.exe
 ### Dynamic Analysis Log Artifact
 
 ```text
-C:\Users\Public\A06_3a_Logon_Triggered_Scheduled_Task_SampleApp_log.txt
+C:\Users\Public\A06_3a_COM_Logon_Triggered_Scheduled_Task_SampleApp_log.txt
 ```
 
 ---
 
 #########################################################################
 
-# High-Level Logon-Triggered Scheduled Task Persistence Flow
+# High-Level COM Logon-Triggered Scheduled Task Persistence Flow
 
-1. Initialize Task Scheduler persistence workflow
+1. Initialize COM library and security context
 
-2. Configure the scheduled task name:
+2. Instantiate Task Scheduler service via COM interface
+
+3. Connect to local Task Scheduler service
+
+4. Open root task folder (`\`)
+
+5. Remove any existing task with the same name
+
+6. Create a new task definition object
+
+7. Configure registration metadata (author, task identity)
+
+8. Create a **logon trigger**:
 
    ```text
-   A06_3a_LogonPersistence
+   TASK_TRIGGER_LOGON
    ```
 
-3. Configure the payload executable path:
+9. Define execution action:
 
    ```text
    C:\Users\Public\A06_3a_SampleApp.exe
    ```
 
-4. Create a scheduled task configured for:
+10. Configure execution context:
 
-   * Logon-triggered execution
-   * Persistent automatic launch
-   * Interactive user-session execution
+* Run as SYSTEM
+* Service account logon type
 
-5. Register the task with the Windows Task Scheduler service
+11. Register task definition with Task Scheduler
 
-6. Store the task definition within the Task Scheduler subsystem
+12. Exit installer process
 
-7. Exit the installer process after successful task registration
+13. Wait for user logon event
 
-8. Wait for a user logon event
+14. Task Scheduler detects user authentication event
 
-9. Detect user authentication through the Windows logon process
+15. Automatically launch payload application
 
-10. Trigger automatic scheduled task execution
+16. Execute payload in scheduled-task context
 
-11. Launch:
+17. Begin persistent beacon loop
 
-    ```text
-    C:\Users\Public\A06_3a_SampleApp.exe
-    ```
+18. Write execution telemetry to:
 
-12. Execute the payload application inside the interactive desktop session
+```text
+C:\Users\Public\A06_3a_COM_Logon_Triggered_Scheduled_Task_SampleApp_log.txt
+```
 
-13. Begin persistent background beacon loop inside the payload application
+19. Continue execution until terminated
 
-14. Write periodic timestamped execution logs to:
+20. Persistence survives:
 
-    ```text
-    C:\Users\Public\A06_3a_Logon_Triggered_Scheduled_Task_SampleApp_log.txt
-    ```
+* User logoff/logon cycles
+* System reboots
+* Task Scheduler restarts
 
-15. Continue execution indefinitely until terminated
-
-16. Preserve persistence across:
-
-    * User logoff/logon cycles
-    * System reboots
-    * Task Scheduler service restarts
-
-17. Exit cleanly when the payload application is terminated

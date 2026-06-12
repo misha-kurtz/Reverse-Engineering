@@ -1,0 +1,164 @@
+{
+    "sample_id": "A06_3a",
+    "sample_name": "com_logon_scheduled_task_persistence",
+    "dataset": "A",
+    "dataset_type": "controlled",
+    "behavior_class": "A06",
+    "behavior_class_name": "Backdoor Persistence Service Foothold Behavior Class",
+    "source_repository": "https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A06-Backdoor-Persistence-Service-Foothold/A06_3a",
+    "language": "C++",
+    "platform": "Windows",
+    "build_architecture": "x64",
+    "primary_behavior": "persistence",
+    "technique": "scheduled_task_persistence",
+    "subtechnique": "com_api_logon_triggered_task",
+    "execution_model": "user_logon_triggered_scheduled_execution",
+    "description": "Creates persistence by registering a scheduled task using the Windows Task Scheduler 2.0 COM API. The task is configured with a logon trigger and executes under the SYSTEM account. Upon user logon, the Task Scheduler launches a benign marker application that writes a controlled artifact confirming persistence execution.",
+    "components": {
+        "persistence_installer": {
+            "filename": "A06_3a_COM_logon_persist.exe",
+            "role": "initializes COM, connects to the Task Scheduler service, creates a logon-triggered scheduled task, and registers it to execute a marker payload under the SYSTEM account",
+            "source_origin": "custom controlled implementation"
+        },
+        "marker_payload": {
+            "filename": "A06_3a_SampleApp.exe",
+            "role": "benign executable launched by the scheduled task that continuously logs execution to confirm persistence behavior",
+            "payload_type": "benign_persistence_verification_marker",
+            "source_origin": "custom controlled implementation"
+        }
+    },
+    "key_apis": {
+        "persistence_installer": [
+            "CoInitializeEx",
+            "CoInitializeSecurity",
+            "ITaskService::Connect",
+            "ITaskFolder::GetFolder",
+            "ITaskFolder::DeleteTask",
+            "ITaskService::NewTask",
+            "IRegistrationInfo::put_Author",
+            "ITriggerCollection::Create",
+            "ILogonTrigger::put_Id",
+            "IActionCollection::Create",
+            "IExecAction::put_Path",
+            "ITaskFolder::RegisterTaskDefinition"
+        ],
+        "marker_payload": [
+            "Sleep",
+            "time",
+            "localtime",
+            "wcsftime",
+            "_wfopen_s",
+            "fwprintf",
+            "fclose"
+        ]
+    },
+    "persistence_behavior": {
+        "persistence_type": "scheduled_task",
+        "task_name": "A06_3a_LogonTask",
+        "task_folder": "\\",
+        "trigger": "user_logon",
+        "trigger_type": "TASK_TRIGGER_LOGON",
+        "execution_context": "SYSTEM",
+        "logon_type": "TASK_LOGON_SERVICE_ACCOUNT",
+        "action_type": "TASK_ACTION_EXEC",
+        "action_path": "C:\\Users\\Public\\A06_3a_SampleApp.exe",
+        "requires_admin": true,
+        "survives_reboot": true,
+        "scope": "system_wide"
+    },
+    "payload_behavior": {
+        "marker_path": "C:\\Users\\Public\\A06_3a_SampleApp.exe",
+        "confirmation_artifact": "C:\\Users\\Public\\A06_3a_COM_Logon_Triggered_Scheduled_Task_SampleApp_log.txt",
+        "execution_delay_ms": 0,
+        "writes_marker_file": true,
+        "emits_debug_string": false,
+        "destructive_actions": false,
+        "secondary_payload_downloaded": false,
+        "command_execution": false
+    },
+    "expected_static_signals": {
+        "persistence_installer": [
+            "Task Scheduler COM CLSID_TaskScheduler usage",
+            "CoInitializeEx and CoInitializeSecurity calls",
+            "ITaskService::Connect invocation",
+            "TASK_TRIGGER_LOGON constant usage",
+            "TASK_LOGON_SERVICE_ACCOUNT usage",
+            "IExecAction::put_Path referencing C:\\Users\\Public\\A06_3a_SampleApp.exe",
+            "ITaskFolder::RegisterTaskDefinition usage",
+            "hardcoded task name A06_3a_LogonTask"
+        ],
+        "marker_payload": [
+            "Sleep-based loop for periodic execution",
+            "time and localtime usage",
+            "wcsftime timestamp formatting",
+            "_wfopen_s opening log file",
+            "fwprintf writing log entries",
+            "hardcoded log path C:\\Users\\Public\\A06_3a_COM_Logon_Triggered_Scheduled_Task_SampleApp_log.txt"
+        ]
+    },
+    "expected_dynamic_signals": {
+        "registry": [
+            "scheduled task registration stored under Task Scheduler subsystem",
+            "task configuration references SYSTEM execution context"
+        ],
+        "process": [
+            "A06_3a_COM_logon_persist.exe executes as installer",
+            "Task Scheduler launches A06_3a_SampleApp.exe at user logon",
+            "marker process runs continuously after logon",
+            "marker process persists until terminated"
+        ],
+        "file_system": [
+            "C:\\Users\\Public\\A06_3a_COM_Logon_Triggered_Scheduled_Task_SampleApp_log.txt is created",
+            "log file contains repeated timestamped execution entries"
+        ],
+        "host": [
+            "Task visible via schtasks /query",
+            "Task visible in Task Scheduler GUI",
+            "Sysmon Event ID 1 may capture marker process execution",
+            "Task registration events may appear in Windows Event Logs (TaskScheduler/Operational)"
+        ],
+        "network": [
+            "no network activity is expected",
+            "no DNS activity is required",
+            "no HTTP or HTTPS traffic is required",
+            "no TCP command channel is opened"
+        ]
+    },
+    "code_placement": "COM initialization, task creation, and registration logic are implemented in the installer executable. Persistent execution logging behavior is implemented in the separate marker payload executable.",
+    "execution_trigger": "The installer executes manually. The persistence payload executes automatically when a user logs into the system via the Task Scheduler logon trigger.",
+    "execution_target": "Scheduled Task subsystem and marker executable at C:\\Users\\Public\\A06_3a_SampleApp.exe",
+    "semantic_meaning": "Demonstrates scheduled task persistence using the Task Scheduler COM API, where a logon-triggered task executes a benign marker application under SYSTEM context to simulate real-world persistence mechanisms used by malware.",
+    "mitre_attack_mapping": {
+        "tactic": "Persistence",
+        "technique_id": "T1053",
+        "technique_name": "Scheduled Task/Job",
+        "note": "Specifically aligns with Scheduled Task persistence via COM API and logon-triggered execution."
+    },
+    "control_notes": {
+        "benign_intent": true,
+        "network_required": false,
+        "persistence": true,
+        "credential_access": false,
+        "destructive_actions": false,
+        "command_execution": false,
+        "command_polling": false,
+        "payload_download": false,
+        "interactive_channel": false,
+        "payload_effect": "writes a controlled log file confirming scheduled task persistence execution",
+        "payload_staged_to_disk": true
+    },
+    "success_conditions": [
+        "installer successfully initializes COM and connects to Task Scheduler",
+        "existing task A06_3a_LogonTask is deleted if present",
+        "new scheduled task definition is created",
+        "task is configured with TASK_TRIGGER_LOGON",
+        "task action points to C:\\Users\\Public\\A06_3a_SampleApp.exe",
+        "task is registered under SYSTEM context",
+        "user logs off and logs back in",
+        "Task Scheduler launches A06_3a_SampleApp.exe",
+        "marker begins writing log entries immediately",
+        "log file C:\\Users\\Public\\A06_3a_COM_Logon_Triggered_Scheduled_Task_SampleApp_log.txt is created",
+        "log file contains repeated timestamped entries confirming execution",
+        "no network activity or secondary payload execution occurs"
+    ]
+}

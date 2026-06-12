@@ -1,0 +1,212 @@
+```json
+{
+    "sample_id": "A06_6",
+    "sample_name": "dns_backdoor_command_polling",
+    "dataset": "A",
+    "dataset_type": "controlled",
+    "behavior_class": "A06",
+    "behavior_class_name": "Backdoor Persistence Service Foothold Behavior Class",
+    "source_repository": "https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A06-Backdoor-Persistence-Service-Foothold/A06_6",
+    "language": "C#",
+    "platform": "Windows",
+    "build_architecture": "x64",
+    "primary_behavior": "backdoor",
+    "technique": "dns_command_and_control",
+    "subtechnique": "dns_txt_command_polling_with_query_based_exfiltration",
+    "execution_model": "periodic_dns_polling_loop",
+    "description": "Establishes a controlled DNS-based backdoor that periodically polls a command domain for Base64-encoded TXT record instructions. Supported commands are intentionally limited and benign. When the ping command is received, the sample executes a local loopback ping, captures standard output, Base64-encodes the result, splits it into DNS-safe chunks, and transmits the chunks through DNS A-record lookup activity.",
+    "components": {
+        "backdoor_agent": {
+            "filename": "A06_6_DNS_Backdoor.exe",
+            "role": "polls DNS TXT records for encoded commands, decodes instruction tokens, executes supported benign commands, captures command output, and transmits output through DNS query activity",
+            "source_origin": "custom controlled implementation"
+        },
+        "command_channel": {
+            "domain": "agent77.cmd.lab.local",
+            "role": "controlled DNS TXT command retrieval endpoint served by modified INetSim DNS behavior",
+            "source_origin": "modified controlled INetSim lab configuration"
+        }
+    },
+    "key_apis": {
+        "backdoor_agent": [
+            "DnsQuery_W",
+            "DnsRecordListFree",
+            "Marshal.ReadInt16",
+            "Marshal.OffsetOf",
+            "Marshal.ReadIntPtr",
+            "Marshal.PtrToStringUni",
+            "Convert.FromBase64String",
+            "Convert.ToBase64String",
+            "Encoding.UTF8.GetString",
+            "Encoding.UTF8.GetBytes",
+            "System.Diagnostics.Process.Start",
+            "Process.StandardOutput.ReadToEnd",
+            "Process.WaitForExit",
+            "Thread.Sleep"
+        ]
+    },
+    "command_and_control_behavior": {
+        "c2_type": "dns",
+        "root_domain": "cmd.lab.local",
+        "agent_id": "agent77",
+        "command_domain": "agent77.cmd.lab.local",
+        "command_record_type": "TXT",
+        "command_encoding": "base64",
+        "polling_interval_ms": 30000,
+        "duplicate_command_suppression": true,
+        "last_command_tracking": true,
+        "supported_commands": [
+            "ping",
+            "exit"
+        ],
+        "command_execution": true,
+        "command_execution_method": "System.Diagnostics.Process",
+        "command_shell": "cmd.exe",
+        "ping_command_line": "cmd.exe /c ping 127.0.0.1 -n 2",
+        "exit_behavior": "terminates polling loop"
+    },
+    "exfiltration_behavior": {
+        "exfiltration_channel": "dns_queries",
+        "exfiltration_record_type": "A",
+        "output_collection": "redirected_standard_output",
+        "output_encoding": "base64",
+        "padding_removed": true,
+        "chunk_size": 30,
+        "chunk_domain_format": "data.<index>.<chunk>.cmd.lab.local",
+        "inter_chunk_delay_ms": 500,
+        "direct_socket_connection": false,
+        "http_exfiltration": false,
+        "tcp_command_channel": false
+    },
+    "payload_behavior": {
+        "marker_path": null,
+        "confirmation_artifact": "DNS TXT command retrieval, cmd.exe child process execution, and DNS query-based output exfiltration visible in INetSim logs and packet capture",
+        "execution_delay_ms": 30000,
+        "writes_marker_file": false,
+        "emits_debug_string": false,
+        "destructive_actions": false,
+        "secondary_payload_downloaded": false,
+        "command_execution": true,
+        "network_required": true
+    },
+    "expected_static_signals": {
+        "backdoor_agent": [
+            "dnsapi.dll import through DllImport",
+            "DnsQuery_W P/Invoke declaration",
+            "DnsRecordListFree P/Invoke declaration",
+            "DNS_TYPE_TEXT constant 0x0010",
+            "DNS_QUERY_STANDARD constant 0x00000000",
+            "custom DNS_RECORD structure definition",
+            "custom DNS_TXT_DATA structure definition",
+            "Marshal pointer parsing of native DNS_RECORD data",
+            "hardcoded root domain cmd.lab.local",
+            "hardcoded command domain construction agent77.cmd.lab.local",
+            "Base64 command decoding through Convert.FromBase64String",
+            "Base64 output encoding through Convert.ToBase64String",
+            "System.Diagnostics.Process usage",
+            "cmd.exe command execution string",
+            "ping 127.0.0.1 -n 2 command string",
+            "data.<index>.<chunk>.cmd.lab.local exfiltration domain pattern",
+            "Thread.Sleep polling loop with 30-second interval"
+        ]
+    },
+    "expected_dynamic_signals": {
+        "registry": [
+            "no registry modification is expected",
+            "no Run key persistence is created",
+            "no service configuration is modified",
+            "no scheduled task is created"
+        ],
+        "process": [
+            "A06_6_DNS_Backdoor.exe runs as the DNS polling agent",
+            "agent periodically queries agent77.cmd.lab.local for TXT records",
+            "cmd.exe is spawned when the ping command is received",
+            "cmd.exe executes /c ping 127.0.0.1 -n 2",
+            "duplicate command tokens are skipped to avoid repeated execution"
+        ],
+        "file_system": [
+            "no marker file is created",
+            "no payload is written to disk",
+            "no secondary executable is dropped"
+        ],
+        "host": [
+            "console output records DNS polling activity",
+            "console output records raw TXT payload retrieval",
+            "console output records Base64 command decoding",
+            "console output records command execution progress",
+            "console output records DNS chunk exfiltration progress",
+            "Sysmon Event ID 1 may capture cmd.exe child process creation"
+        ],
+        "network": [
+            "periodic DNS TXT lookups for agent77.cmd.lab.local",
+            "DNS TXT response contains Base64-encoded command token",
+            "DNS A-record lookups are generated for data.<index>.<chunk>.cmd.lab.local",
+            "DNS query labels contain Base64-encoded command output fragments",
+            "no HTTP or HTTPS traffic is required",
+            "no direct TCP command channel is opened"
+        ]
+    },
+    "code_placement": "DNS command polling, TXT record parsing, command decoding, duplicate command suppression, command execution, output capture, Base64 encoding, chunking, and DNS query-based exfiltration are implemented in a single C# backdoor agent.",
+    "execution_trigger": "The specimen executes manually. Once started, it enters a continuous polling loop that queries the configured DNS command domain every 30 seconds until the exit command is received.",
+    "execution_target": "Native Windows DNS API, modified INetSim DNS command response, local cmd.exe child process, and DNS query stream used for output exfiltration.",
+    "semantic_meaning": "Demonstrates a DNS-based command-and-control backdoor where commands are retrieved through TXT records and command output is transmitted through DNS lookup activity, modeling a low-bandwidth covert channel that blends with normal name-resolution traffic.",
+    "mitre_attack_mapping": {
+        "tactic": "Command and Control",
+        "technique_id": "T1071",
+        "technique_name": "Application Layer Protocol",
+        "subtechnique_id": "T1071.004",
+        "subtechnique_name": "DNS",
+        "additional_mappings": [
+            {
+                "tactic": "Execution",
+                "technique_id": "T1059",
+                "technique_name": "Command and Scripting Interpreter",
+                "subtechnique_id": "T1059.003",
+                "subtechnique_name": "Windows Command Shell"
+            },
+            {
+                "tactic": "Exfiltration",
+                "technique_id": "T1048",
+                "technique_name": "Exfiltration Over Alternative Protocol"
+            }
+        ],
+        "note": "DNS TXT records are used for command retrieval, and DNS A-record lookup labels are used to transmit Base64-encoded command output fragments."
+    },
+    "control_notes": {
+        "benign_intent": true,
+        "network_required": true,
+        "persistence": false,
+        "credential_access": false,
+        "destructive_actions": false,
+        "command_execution": true,
+        "command_polling": true,
+        "payload_download": false,
+        "interactive_channel": false,
+        "dns_c2_channel": true,
+        "dns_exfiltration": true,
+        "payload_effect": "executes a benign loopback ping command and transmits captured output through DNS query activity",
+        "payload_staged_to_disk": false,
+        "requires_modified_inetsim_dns": true
+    },
+    "success_conditions": [
+        "modified INetSim DNS service returns a TXT response for agent77.cmd.lab.local",
+        "A06_6_DNS_Backdoor.exe starts successfully",
+        "agent enters the continuous polling loop",
+        "agent queries agent77.cmd.lab.local for TXT records",
+        "TXT response contains Base64-encoded command cGluZw==",
+        "agent decodes the TXT response to ping",
+        "agent detects the command as new and processes it",
+        "cmd.exe launches with /c ping 127.0.0.1 -n 2",
+        "ping command output is captured from StandardOutput",
+        "output is encoded as Base64",
+        "Base64 output is split into 30-character chunks",
+        "agent issues DNS A-record lookups using data.<index>.<chunk>.cmd.lab.local",
+        "INetSim logs show DNS exfiltration query sequence",
+        "analyst can reconstruct output by ordering chunks by index",
+        "reconstructed Base64 stream decodes to the original ping output",
+        "no persistence mechanism is created",
+        "no secondary payload is downloaded",
+        "no destructive action occurs"
+    ]
+}
+```

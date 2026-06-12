@@ -1,0 +1,170 @@
+{
+    "sample_id": "A06_3d",
+    "sample_name": "schtasks_onlogon_scheduled_task_persistence",
+    "dataset": "A",
+    "dataset_type": "controlled",
+    "behavior_class": "A06",
+    "behavior_class_name": "Backdoor Persistence Service Foothold Behavior Class",
+    "source_repository": "https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A06-Backdoor-Persistence-Service-Foothold/A06_3d",
+    "language": "C++",
+    "platform": "Windows",
+    "build_architecture": "x64",
+    "primary_behavior": "persistence",
+    "technique": "scheduled_task_persistence",
+    "subtechnique": "schtasks_onlogon_task",
+    "execution_model": "logon_triggered_execution",
+    "description": "Creates persistence by launching schtasks.exe via CreateProcessW to register a Windows Scheduled Task that executes when a user logs on. The task runs under the SYSTEM account and launches a benign marker payload that writes recurring log entries to confirm logon-triggered persistence behavior.",
+    "components": {
+        "persistence_installer": {
+            "filename": "A06_3d_schtask_onlogon.exe",
+            "role": "launches schtasks.exe with an ONLOGON trigger configuration to create a SYSTEM-context scheduled task for the marker payload",
+            "source_origin": "custom controlled implementation"
+        },
+        "marker_payload": {
+            "filename": "A06_3d_SampleApp.exe",
+            "role": "benign executable launched by the scheduled task during user logon to log execution and confirm persistence behavior",
+            "payload_type": "benign_persistence_verification_marker",
+            "source_origin": "custom controlled implementation"
+        }
+    },
+    "key_apis": {
+        "persistence_installer": [
+            "CreateProcessW",
+            "WaitForSingleObject",
+            "GetExitCodeProcess",
+            "CloseHandle",
+            "GetLastError",
+            "ZeroMemory"
+        ],
+        "marker_payload": [
+            "wWinMain",
+            "time",
+            "localtime",
+            "wcsftime",
+            "_wfopen_s",
+            "fwprintf",
+            "fclose",
+            "Sleep"
+        ]
+    },
+    "persistence_behavior": {
+        "persistence_type": "scheduled_task",
+        "task_name": "A06_3d_Task",
+        "task_folder": "\\",
+        "trigger": "logon_based",
+        "trigger_type": "ONLOGON",
+        "registration_utility": "schtasks.exe",
+        "registration_command": "schtasks.exe /create /tn \"A06_3d_Task\" /sc onlogon /tr \"C:\\Users\\Public\\A06_3d_SampleApp.exe\" /ru SYSTEM",
+        "execution_context": "SYSTEM",
+        "action_type": "scheduled_task_exec",
+        "action_path": "C:\\Users\\Public\\A06_3d_SampleApp.exe",
+        "requires_admin": true,
+        "survives_reboot": true,
+        "scope": "system_wide"
+    },
+    "payload_behavior": {
+        "marker_path": "C:\\Users\\Public\\A06_3d_SampleApp.exe",
+        "confirmation_artifact": "C:\\Users\\Public\\A06_3d_Scheduled_Task_SampleApp_log.txt",
+        "execution_delay_ms": 5000,
+        "writes_marker_file": true,
+        "emits_debug_string": false,
+        "destructive_actions": false,
+        "secondary_payload_downloaded": false,
+        "command_execution": false
+    },
+    "expected_static_signals": {
+        "persistence_installer": [
+            "CreateProcessW usage",
+            "schtasks.exe execution",
+            "CREATE_NO_WINDOW process creation flag",
+            "STARTF_USESHOWWINDOW startup flag",
+            "SW_HIDE window visibility setting",
+            "hardcoded task name A06_3d_Task",
+            "hardcoded payload path C:\\Users\\Public\\A06_3d_SampleApp.exe",
+            "ONLOGON scheduled task trigger string",
+            "SYSTEM run-as context string"
+        ],
+        "marker_payload": [
+            "wWinMain Windows GUI entry point",
+            "time and localtime timestamp generation",
+            "wcsftime timestamp formatting",
+            "_wfopen_s file append usage",
+            "fwprintf wide-character log writes",
+            "Sleep loop with 5-second interval",
+            "hardcoded log path C:\\Users\\Public\\A06_3d_Scheduled_Task_SampleApp_log.txt"
+        ]
+    },
+    "expected_dynamic_signals": {
+        "registry": [
+            "scheduled task registered in Task Scheduler subsystem"
+        ],
+        "process": [
+            "A06_3d_schtask_onlogon.exe runs as installer",
+            "installer launches C:\\Windows\\System32\\schtasks.exe",
+            "schtasks.exe registers A06_3d_Task",
+            "Task Scheduler launches A06_3d_SampleApp.exe during user logon",
+            "payload remains active in a continuous logging loop"
+        ],
+        "file_system": [
+            "C:\\Windows\\System32\\Tasks\\A06_3d_Task may be created",
+            "C:\\Users\\Public\\A06_3d_Scheduled_Task_SampleApp_log.txt is created",
+            "log file grows over time with repeated 5-second beacon entries"
+        ],
+        "host": [
+            "Task visible via schtasks /query /tn \"A06_3d_Task\"",
+            "Task visible in Task Scheduler GUI",
+            "Task Scheduler Operational logs may record task registration and launch",
+            "Sysmon Event ID 1 may capture schtasks.exe execution",
+            "Sysmon Event ID 1 may capture payload execution after logon"
+        ],
+        "network": [
+            "no network activity is expected",
+            "no DNS activity is required",
+            "no HTTP or HTTPS traffic is required",
+            "no TCP command channel is opened"
+        ]
+    },
+    "code_placement": "Scheduled task registration logic is implemented in the installer by invoking schtasks.exe through CreateProcessW. Persistent execution confirmation is implemented in the marker payload through timestamped file logging.",
+    "execution_trigger": "The installer executes manually. The persistence payload executes automatically whenever a user logon event satisfies the scheduled task trigger.",
+    "execution_target": "Task Scheduler logon-trigger subsystem and marker executable at C:\\Users\\Public\\A06_3d_SampleApp.exe",
+    "semantic_meaning": "Demonstrates logon-triggered persistence using the Windows Task Scheduler command-line utility, where execution is tied to user authentication events and persists across reboots or logoff/logon cycles.",
+    "mitre_attack_mapping": {
+        "tactic": "Persistence",
+        "technique_id": "T1053",
+        "technique_name": "Scheduled Task/Job",
+        "subtechnique_id": "T1053.005",
+        "subtechnique_name": "Scheduled Task",
+        "note": "Logon-triggered scheduled task persistence using schtasks.exe and SYSTEM execution context."
+    },
+    "control_notes": {
+        "benign_intent": true,
+        "network_required": false,
+        "persistence": true,
+        "credential_access": false,
+        "destructive_actions": false,
+        "command_execution": false,
+        "command_polling": false,
+        "payload_download": false,
+        "interactive_channel": false,
+        "payload_effect": "writes recurring log entries confirming scheduled execution after user logon",
+        "payload_staged_to_disk": true
+    },
+    "success_conditions": [
+        "installer successfully launches schtasks.exe through CreateProcessW",
+        "schtasks.exe exits with code 0",
+        "scheduled task A06_3d_Task is created",
+        "task is configured with an ONLOGON trigger",
+        "task is configured to run as SYSTEM",
+        "task action points to C:\\Users\\Public\\A06_3d_SampleApp.exe",
+        "user logs off and logs back into the Windows analysis VM",
+        "Task Scheduler activates the logon trigger",
+        "A06_3d_SampleApp.exe is executed automatically",
+        "payload writes an initialization log entry",
+        "payload continues writing beacon log entries every 5 seconds",
+        "log file C:\\Users\\Public\\A06_3d_Scheduled_Task_SampleApp_log.txt is created",
+        "log file grows over time with repeated entries",
+        "no network activity or secondary payload execution occurs"
+    ]
+}
+
+    

@@ -1,35 +1,34 @@
-# A06_3c COM API Scheduled Task Persistence
+# A06_3c COM-Based Recurring Scheduled Task Persistence
 
 ## Summary
 
 Creates persistent execution on the Windows analysis VM by
-registering a scheduled task through the modern Windows Task Scheduler
-2.0 COM API interface rather than relying on legacy command-line task
-registration utilities.
+registering a Windows Scheduled Task using the Task Scheduler 2.0
+COM API, configured to execute on a recurring time interval.
 
-The specimen demonstrates COM-based scheduled-task persistence
-commonly associated with advanced backdoors, loaders, remote access
-trojans, and long-term foothold malware that interacts directly with
-Windows management infrastructure through native COM interfaces.
+The specimen demonstrates time-based scheduled-task persistence
+commonly associated with backdoors, loaders, and long-term foothold
+malware that requires periodic execution independent of user activity.
 
-Unlike basic `schtasks.exe` usage, this sample communicates directly
-with the Task Scheduler service using COM object instantiation and
-Task Scheduler 2.0 interfaces, closely mirroring how modern malware
-and administrative tooling programmatically create persistence tasks.
+Unlike logon-triggered or event-driven persistence, this sample
+leverages a time-triggered execution model, ensuring consistent,
+predictable execution at fixed intervals.
 
-The scheduled task launches the following payload:
+The scheduled task is configured to:
 
-```text id="9f2w7j"
+- Execute under the SYSTEM account  
+- Trigger automatically on a time-based schedule  
+- Repeat execution every 1 minute  
+- Run regardless of user logon state  
+
+The task launches the following payload:
+
+```text
 C:\Users\Public\A06_3c_SampleApp.exe
-```
+````
 
-This demonstrates a persistence pattern commonly used to avoid
-simple command-line telemetry, blend into legitimate Windows
-administrative behavior, and interact directly with the underlying
-Task Scheduler COM framework.
-
-The persistence payload itself is intentionally benign and exists
-only to generate controlled forensic artifacts for dynamic analysis.
+The persistence payload is intentionally benign and exists only to
+generate controlled forensic artifacts for dynamic analysis.
 
 ---
 
@@ -37,57 +36,54 @@ only to generate controlled forensic artifacts for dynamic analysis.
 
 The payload behavior is the execution of:
 
-```text id="3c8m4s"
+```text
 A06_3c_SampleApp.exe
 ```
 
-after the COM-registered scheduled task is triggered.
+on a recurring 1-minute interval defined by the Task Scheduler.
 
 When executed, the payload application:
 
-* Creates a continuous beacon-style telemetry loop
-* Runs persistently in the background
-* Writes periodic timestamped execution records to:
+* Writes a timestamped log entry upon each execution
+* Confirms repeated scheduled execution behavior
+* Runs in a continuous loop once triggered
+* Writes telemetry to:
 
-```text id="h6q4dr"
-C:\Users\Public\A06_3c_COM_API_Scheduled_Task_SampleApp_log.txt
+```text
+C:\Users\Public\A06_3c_COM_Recurring_Scheduled_Task_SampleApp_log.txt
 ```
 
-The log entries confirm:
+Example log messages include:
 
-* Successful COM-based task execution
-* Task Scheduler 2.0 activation
-* SYSTEM or administrative execution context
-* Continued persistence activity over time
-
-Example log entries include:
-
-```text id="e8v2yp"
-[A06_3c] Modern Task Scheduler 2.0 COM API Task execution active. Context: SYSTEM/Admin.
+```text
+[2026-06-12 14:00:00] [A06_3c] COM Recurring Scheduled Task execution active (interval=1m).
 ```
 
-No additional payloads are downloaded, injected, staged, or executed.
+No additional payloads are downloaded, injected, or executed.
 
 ---
 
-## To Execute A06_3c_com_api_task
+## To Execute A06_3c_COM_recur_persist
 
-### Register the COM-Based Scheduled Task
+### Register the Scheduled Task
 
-```powershell id="g0s7ja"
-.\A06-Backdoor-Persistence-Service-Foothold\A06_3c\bin\A06_3c_com_api_task.exe
+```powershell
+.\A06-Backdoor-Persistence-Service-Foothold\A06_3c\bin\A06_3c_COM_recur_persist.exe
 ```
 
 ### Verify Task Registration
 
-```powershell id="2h53du"
-schtasks /query /tn "A06_3c_COM_API_Task"
+```powershell
+schtasks /query /tn "A06_3c_RecurTask"
 ```
 
-### Trigger Persistence
+### Observe Execution
 
-Trigger the configured task condition or wait for the configured
-schedule interval depending on the test configuration.
+Wait approximately 1 minute for the first execution cycle, then monitor:
+
+```text
+C:\Users\Public\A06_3c_COM_Recurring_Scheduled_Task_SampleApp_log.txt
+```
 
 ---
 
@@ -95,98 +91,100 @@ schedule interval depending on the test configuration.
 
 ### Scheduled Task Registration
 
-```text id="r1e4tz"
-Task Name: A06_3c_COM_API_Task
-Registration Method: Task Scheduler 2.0 COM API
+```text
+Task Name: A06_3c_RecurTask
+Trigger Type: Time-Based
+Repetition Interval: 1 Minute
+Execution Context: SYSTEM
 ```
 
 ### Scheduled Payload
 
-```text id="v2dk7q"
+```text
 C:\Users\Public\A06_3c_SampleApp.exe
 ```
 
 ### Dynamic Analysis Log Artifact
 
-```text id="s6uj4h"
-C:\Users\Public\A06_3c_COM_API_Scheduled_Task_SampleApp_log.txt
+```text
+C:\Users\Public\A06_3c_COM_Recurring_Scheduled_Task_SampleApp_log.txt
 ```
 
 ---
 
 #########################################################################
 
-# High-Level COM API Scheduled Task Persistence Flow
+## High-Level COM-Based Recurring Scheduled Task Persistence Flow
 
-1. Initialize the COM subsystem using:
+1. Initialize COM runtime and security context
 
-   ```text
-   CoInitializeEx()
-   ```
-
-2. Instantiate the Task Scheduler COM service interfaces
-
-3. Connect to the Windows Task Scheduler service through COM
-
-4. Create a new task definition object
-
-5. Configure task registration metadata:
-
-   * Task name
-   * Author information
-   * Execution settings
-   * Trigger configuration
-
-6. Configure the payload executable path:
+2. Instantiate Task Scheduler service via:
 
    ```text
-   C:\Users\Public\A06_3c_SampleApp.exe
+   CLSID_TaskScheduler
    ```
 
-7. Create a scheduled task action object
+3. Connect to the local Task Scheduler instance
 
-8. Associate the payload executable with the task action
+4. Access the root task folder:
 
-9. Configure the trigger type:
+   ```text
+   \\
+   ```
 
-   * Time-based trigger
-   * Logon trigger
-   * Immediate test trigger
-   * Administrative execution context
+5. Remove any existing task:
 
-10. Register the task definition with the Task Scheduler service
-    through COM interfaces
+   ```text
+   A06_3c_RecurTask
+   ```
 
-11. Store the task within the Windows scheduled-task subsystem
+6. Create a new task definition object
 
-12. Exit the installer process after successful registration
+7. Configure registration metadata:
 
-13. Wait for the configured trigger condition
+   * Author
+   * Description
 
-14. Trigger automatic task execution through Task Scheduler 2.0
+8. Configure execution principal:
 
-15. Launch:
+   * User: SYSTEM
+   * Logon type: Service account
+   * Run level: Highest privileges
 
-    ```text
-    C:\Users\Public\A06_3c_SampleApp.exe
-    ```
+9. Define time-based trigger:
 
-16. Execute the payload application under the configured execution context
+   * Trigger type: TASK_TRIGGER_TIME
+   * Start boundary: Current time + 1 minute
+   * Repetition interval: PT1M (1 minute)
 
-17. Begin continuous beacon-style telemetry loop
+10. Define execution action:
 
-18. Write periodic timestamped execution logs to:
+```text
+C:\Users\Public\A06_3c_SampleApp.exe
+```
 
-    ```text
-    C:\Users\Public\A06_3c_COM_API_Scheduled_Task_SampleApp_log.txt
-    ```
+11. Configure task settings:
 
-19. Continue execution indefinitely until terminated
+* Hidden task
+* Execution allowed on battery power
 
-20. Preserve persistence across:
+12. Register task with Task Scheduler service
 
-    * User logoff/logon cycles
-    * System reboots
-    * Task Scheduler service restarts
+13. Wait for scheduled trigger activation
 
-21. Clean up COM objects and exit cleanly after registration
+14. Task Scheduler launches payload automatically
+
+15. Payload writes timestamped execution logs
+
+16. Execution repeats every minute
+
+17. Persistence survives:
+
+* Reboots
+* User logoff
+* Service restarts
+
+18. Continues indefinitely until task is removed
+
+
+
