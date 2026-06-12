@@ -1,5 +1,5 @@
 
-# A05 Beaconing / Interactive C2 Class
+## A05 Beaconing / Interactive C2 Class
 
 |ID|Technique|Core Transition|Dominant APIs / Mechanisms|Static Artifacts (Ghidra)|Dynamic Artifacts (Procmon / PCAP / Sysmon)|Semantic Meaning|
 |---|---|---|---|---|---|---|

@@ -1,4 +1,4 @@
-# A03 Dropper / Loader / Stager Class
+## A03 Dropper / Loader / Stager Class
 
 |ID|Technique|Dominant APIs / Mechanisms|Static Artifacts (Ghidra)|Dynamic Artifacts (Procmon / Sysmon / PCAP)|Semantic Meaning|
 |---|---|---|---|---|---|
