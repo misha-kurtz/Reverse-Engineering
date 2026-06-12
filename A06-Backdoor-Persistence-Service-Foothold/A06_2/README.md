@@ -1,4 +1,4 @@
-# A06_2 Service-Based Persistence
+# A06.2 Service-Based Persistence
 
 ## Summary
 

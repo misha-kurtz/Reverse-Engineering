@@ -1,4 +1,4 @@
-# A06_6 DNS Backdoor with Command Polling
+# A06.6 DNS Backdoor with Command Polling
 
 > [!IMPORTANT]
 > This specimen requires a modified INetSim DNS 

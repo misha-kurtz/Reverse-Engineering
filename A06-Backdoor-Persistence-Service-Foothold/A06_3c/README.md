@@ -1,4 +1,4 @@
-# A06_3c COM-Based Recurring Scheduled Task Persistence
+# A06.3c COM-Based Recurring Scheduled Task Persistence
 
 ## Summary
 

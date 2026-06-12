@@ -1,4 +1,4 @@
-# A06_1a Registry Run-Key Persistence
+# A06.1a Registry Run-Key Persistence
 
 ## Summary
 

@@ -1,4 +1,4 @@
-# A06_1b Offline Registry Hive Save/Restore Persistence
+# A06.1b Offline Registry Hive Save/Restore Persistence
 
 ## Summary
 

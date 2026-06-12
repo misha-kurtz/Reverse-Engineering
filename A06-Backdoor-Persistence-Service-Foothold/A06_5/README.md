@@ -1,4 +1,4 @@
-# A06_5 System Startup RDP Foothold Persistence
+# A06.5 System Startup RDP Foothold Persistence
 
 ## Summary
 

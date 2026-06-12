@@ -1,4 +1,4 @@
-# A06_4 WMI Event Subscription Persistence
+# A06.4 WMI Event Subscription Persistence
 
 ## Summary
 
