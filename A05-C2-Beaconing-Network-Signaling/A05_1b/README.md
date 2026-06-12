@@ -1,4 +1,4 @@
-# A05_1b HTTPS Beacon with Command Polling
+# A05.1b HTTPS Beacon with Command Polling
 
 ## Summary
 

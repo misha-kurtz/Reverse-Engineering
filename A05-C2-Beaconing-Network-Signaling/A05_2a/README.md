@@ -1,4 +1,4 @@
-# A05_2a DNS Beacon Using getaddrinfo
+# A05.2a DNS Beacon Using getaddrinfo
 
 ## Summary
 

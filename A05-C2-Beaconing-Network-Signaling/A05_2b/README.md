@@ -1,4 +1,4 @@
-# A05_2b DNS Beacon Using DnsQuery_A
+# A05.2b DNS Beacon Using DnsQuery_A
 
 ## Summary
 
