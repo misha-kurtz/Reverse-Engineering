@@ -1,18 +1,5 @@
 # Backdoor / Persistence / Service Foothold Class
 
-### Control Samples
-
-1. [A06_1a Registry Run-Key Persistence](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A06-Backdoor-Persistence-Service-Foothold/A06_1a)
-2. [A06_1b Offline Registry Hive Save/Restore Persistence](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A06-Backdoor-Persistence-Service-Foothold/A06_1b)
-3. [A06_2 Windows Service Persistence Watchdog](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A06-Backdoor-Persistence-Service-Foothold/A06_2)
-4. [A06_3a COM Logon Scheduled Task Persistence](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A06-Backdoor-Persistence-Service-Foothold/A06_3a)
-5. [A06_3b COM Event-Triggered Scheduled Task Persistence](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A06-Backdoor-Persistence-Service-Foothold/A06_3b)
-6. [A06_3c COM Recurring Scheduled Task Persistence](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A06-Backdoor-Persistence-Service-Foothold/A06_3c)
-7. [A06_3d `schtasks.exe` On-Logon Scheduled Task Persistence](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A06-Backdoor-Persistence-Service-Foothold/A06_3d)
-8. [A06_4 WMI Event Subscription Persistence](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A06-Backdoor-Persistence-Service-Foothold/A06_4)
-9. [A06_5 System Startup Folder + RDP Foothold](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A06-Backdoor-Persistence-Service-Foothold/A06_5)
-10. [A06_6 DNS Backdoor with Command Polling](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A06-Backdoor-Persistence-Service-Foothold/A06_6)
-
 |ID|Technique|Core Transition|Dominant APIs / Mechanisms|Static Artifacts (Ghidra)|Dynamic Artifacts (Procmon / PCAP / Sysmon)|Semantic Meaning|
 |---|---|---|---|---|---|---|
 |**A06_1a**|Registry Run-Key Persistence|installer → HKCU Run value → user logon autostart → marker execution|`RegOpenKeyExW`, `RegCreateKeyExW`, `RegQueryValueExW`, `RegSetValueExW`, `CreateFileA`, `WriteFile`, `OutputDebugStringA`|HKCU Run key path, MachineGuid registry path, normalized value-name logic, hardcoded marker path, `REG_SZ` autostart value|Run-key value creation, marker execution after logon/reboot, marker file in `C:\Users\Public`, debug string emission|Demonstrates classic user-level autostart persistence through a Run-key value that launches a benign marker during user logon|
@@ -25,3 +12,17 @@
 |**A06_4**|WMI Event Subscription Persistence|installer → permanent WMI filter/consumer/binding → registry value change → marker execution|`ManagementScope`, `__EventFilter`, `CommandLineEventConsumer`, `__FilterToConsumerBinding`, `RegistryKey.SetValue`, `CreateFileA`, `OutputDebugStringA`|`root\subscription`, WQL `RegistryValueChangeEvent`, filter/consumer names, registry trigger path, marker executable path|WMI objects created, registry trigger modification, WMI-launched marker process, marker file artifact|Demonstrates event-driven WMI persistence using a permanent subscription that launches a payload when a registry value changes|
 |**A06_5**|System Startup Folder + RDP Foothold|manual execution → self-copy to All Users Startup → startup execution → account/RDP/firewall configuration|`GetModuleFileNameW`, `SHGetFolderPathW`, `CopyFileW`, `NetUserAdd`, `NetLocalGroupAddMembers`, `RegSetValueExW`, `INetFwPolicy2::EnableRuleGroup`|Startup folder path, self-copy filename, hardcoded local account, RDP registry paths, Winlogon `SpecialAccounts`, firewall COM usage|Startup-folder copy, local account creation, Administrators membership change, RDP enabled, NLA disabled, firewall rule group enabled|Combines autostart persistence with controlled RDP foothold configuration to model backdoor-style remote access setup|
 |**A06_6**|DNS Backdoor with Command Polling|agent → DNS TXT command retrieval → benign command execution → DNS query exfiltration loop|`DnsQuery_W`, `DnsRecordListFree`, `Marshal` pointer parsing, `Convert.FromBase64String`, `Process.Start`, `StandardOutput.ReadToEnd`, `Thread.Sleep`|`dnsapi.dll` P/Invoke, hardcoded `agent77.cmd.lab.local`, TXT record parsing, Base64 decode/encode logic, `cmd.exe /c ping`, `data.<index>.<chunk>` domain pattern|Periodic DNS TXT lookups, `cmd.exe` child process, DNS A-record exfiltration queries, Base64 chunks in DNS labels, no persistence artifacts|Demonstrates DNS-based C2 where commands arrive through TXT records and command output leaves through DNS query labels|
+
+
+### Control Samples
+
+1. [A06_1a Registry Run-Key Persistence](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A06-Backdoor-Persistence-Service-Foothold/A06_1a)
+2. [A06_1b Offline Registry Hive Save/Restore Persistence](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A06-Backdoor-Persistence-Service-Foothold/A06_1b)
+3. [A06_2 Windows Service Persistence Watchdog](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A06-Backdoor-Persistence-Service-Foothold/A06_2)
+4. [A06_3a COM Logon Scheduled Task Persistence](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A06-Backdoor-Persistence-Service-Foothold/A06_3a)
+5. [A06_3b COM Event-Triggered Scheduled Task Persistence](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A06-Backdoor-Persistence-Service-Foothold/A06_3b)
+6. [A06_3c COM Recurring Scheduled Task Persistence](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A06-Backdoor-Persistence-Service-Foothold/A06_3c)
+7. [A06_3d `schtasks.exe` On-Logon Scheduled Task Persistence](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A06-Backdoor-Persistence-Service-Foothold/A06_3d)
+8. [A06_4 WMI Event Subscription Persistence](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A06-Backdoor-Persistence-Service-Foothold/A06_4)
+9. [A06_5 System Startup Folder + RDP Foothold](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A06-Backdoor-Persistence-Service-Foothold/A06_5)
+10. [A06_6 DNS Backdoor with Command Polling](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A06-Backdoor-Persistence-Service-Foothold/A06_6)
