@@ -1,13 +1,5 @@
 # A02 Process Injection / Hollowing / Code Injection Class
 
-### Control Samples
-
-1. [A02_1 Simple DLL Injection](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A02-Process-Inj-Hollowing-Code-Inj/A02_1)
-2. [A02_2 Remote Thread Injection](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A02-Process-Inj-Hollowing-Code-Inj/A02_2)
-3. [A02_3 Thread Hijacking](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A02-Process-Inj-Hollowing-Code-Inj/A02_3)
-4. [A02_4 APC Injection](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A02-Process-Inj-Hollowing-Code-Inj/A02_4)
-5. [A02_5 Process Hollowing](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A02-Process-Inj-Hollowing-Code-Inj/A02_5)
-
 |ID|Technique|Dominant APIs / Mechanisms|Static Artifacts (Ghidra)|Dynamic Artifacts (Procmon / Sysmon / ETW)|Semantic Meaning|
 |---|---|---|---|---|---|
 |**A02_1**|DLL Injection (LoadLibrary)|`OpenProcess`, `VirtualAllocEx`, `WriteProcessMemory`, `CreateRemoteThread`, `LoadLibraryA`|Clear injection chain (alloc → write → thread), embedded DLL path string, `LoadLibraryA` resolution via `GetProcAddress`|Handle opened to target process, memory allocated and written in remote process, remote thread execution, **DLL loaded into target**, **target process creates marker file (`C:\Users\Public\A02_1_Injected_OK.txt`)**|Forces a target process to load an external DLL via the OS loader, resulting in **execution of attacker-controlled code within the target process context**, evidenced by target-originated side effects|
@@ -16,3 +8,10 @@
 |**A02_4**|APC Injection (Queued LoadLibrary)|`OpenProcess`, `VirtualAllocEx`, `WriteProcessMemory`, `CreateToolhelp32Snapshot`, `Thread32First/Next`, `OpenThread`, `QueueUserAPC`, `GetProcAddress` (`LoadLibraryA`)|Presence of `QueueUserAPC`, thread enumeration logic, DLL path string, indirect execution trigger, absence of `CreateRemoteThread`|Target process handle opened, memory written in remote process, **APC queued to target thread**, execution occurs when thread enters alertable state (`SleepEx`), **DLL loaded into target**, **marker file created (`C:\Users\Public\A02_4_APC_Injection_OK.txt`)**|Schedules execution of injected code via asynchronous procedure calls, causing a target thread to execute attacker-controlled code only when it becomes alertable|
 |**A02_5**|Process Hollowing (RunPE)|`CreateProcess` (suspended), `VirtualAllocEx`, `WriteProcessMemory`, `ReadProcessMemory`, `GetThreadContext`, `SetThreadContext`, `ResumeThread`|PE parsing logic (`IMAGE_NT_HEADERS`), section copying loops, image base manipulation, suspended process creation, absence of `LoadLibrary`/DLL artifacts|Legitimate process created in suspended state, memory of target rewritten with new PE image, thread context redirected to new entry point, **process resumes executing replacement binary**, mismatch between on-disk image and runtime behavior|Replaces the memory image of a legitimate process with a different executable, allowing attacker-controlled code to run under the identity of a benign process|
 
+### Control Samples
+
+1. [A02_1 Simple DLL Injection](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A02-Process-Inj-Hollowing-Code-Inj/A02_1)
+2. [A02_2 Remote Thread Injection](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A02-Process-Inj-Hollowing-Code-Inj/A02_2)
+3. [A02_3 Thread Hijacking](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A02-Process-Inj-Hollowing-Code-Inj/A02_3)
+4. [A02_4 APC Injection](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A02-Process-Inj-Hollowing-Code-Inj/A02_4)
+5. [A02_5 Process Hollowing](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A02-Process-Inj-Hollowing-Code-Inj/A02_5)

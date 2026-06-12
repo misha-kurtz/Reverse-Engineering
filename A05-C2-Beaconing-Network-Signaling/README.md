@@ -1,17 +1,6 @@
 
 # A05 Beaconing / Interactive C2 Class
 
-### Control Samples
-
-1. [A05_1a HTTP Beacon](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A05-C2-Beaconing-Network-Signaling/A05_1a)
-2. [A05_1b HTTPS Beacon with Command Polling](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A05-C2-Beaconing-Network-Signaling/A05_1b)
-3. [A05_2a DNS-Based Beaconing using `getaddrinfo`](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A05-C2-Beaconing-Network-Signaling/A05_2a)
-4. [A05_2b DNS-Based Beaconing using `DnsQueryA`](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A05-C2-Beaconing-Network-Signaling/A05_2b)
-5. [A05_3 Protocol Mimicry](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A05-C2-Beaconing-Network-Signaling/A05_3)
-6. [A05_4 TCP Reverse Shell / Interactive C2](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A05-C2-Beaconing-Network-Signaling/A05_4)
-7. [A05_5 TCP Bind shell / listening interactive C2](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A05-C2-Beaconing-Network-Signaling/A05_5)
-
-
 |ID|Technique|Core Transition|Dominant APIs / Mechanisms|Static Artifacts (Ghidra)|Dynamic Artifacts (Procmon / PCAP / Sysmon)|Semantic Meaning|
 |---|---|---|---|---|---|---|
 |**A05_1a**|Periodic HTTP Beaconing with Jitter|host → outbound HTTP GET check-in → jittered sleep loop|`.NET WebClient`, `DownloadString`, `Thread.Sleep`, randomized interval generation|Hardcoded HTTP URL/domain, browser-like user-agent string, query-string construction, timing/jitter logic|Repeated HTTP GET traffic to `/beacon`, recurring DNS lookups, jittered beacon intervals, consistent URL parameter patterns (`id`, `host`, `user`, `seq`, `time`)|Maintains periodic contact with a controller using repeated HTTP check-ins while varying beacon timing to resemble realistic implant cadence|
@@ -21,3 +10,13 @@
 |**A05_3**|Protocol Mimicry / Telemetry Emulation|host → outbound telemetry-style HTTP POST → fixed interval loop|`.NET HttpClient`, `PostAsync`, JSON payload generation, custom HTTP headers|REST-style API paths, browser/application-style headers, JSON heartbeat body fields, telemetry/version metadata|Repeated HTTP POST requests with JSON telemetry payloads, traffic resembling benign desktop application API traffic, regular heartbeat cadence|Blends beaconing behavior into legitimate-looking telemetry/API traffic patterns to reduce suspicion and resemble normal application communications|
 |**A05_4**|Reverse TCP Shell / Interactive C2|host → outbound TCP connection → redirected shell I/O loop|`.NET TcpClient`, `NetworkStream`, `Process`, redirected standard streams, asynchronous output handlers|Hardcoded IP/port, `cmd.exe` strings, socket communication logic, redirected standard input/output configuration|Persistent outbound TCP session, interactive bidirectional command-response traffic, `cmd.exe` child process creation|Establishes an attacker-controlled interactive command session by having the compromised host initiate an outbound TCP callback and relay shell I/O over the connection|
 |**A05_5**|TCP Bind Shell / Listening Interactive C2|host → local listening socket → inbound operator connection → redirected shell I/O loop|`WSASocketA`, `bind`, `listen`, `accept`, `CreateProcessA`, inherited socket-backed standard handles|Listening port constant, socket server API sequence, `cmd.exe` strings, handle inheritance logic|Host opens a listening TCP port, accepts inbound client connection, launches `cmd.exe`, and exhibits interactive bidirectional TCP shell traffic|Exposes a remotely accessible interactive command channel by turning the host into a TCP listener that redirects shell I/O over an inbound connection|
+
+### Control Samples
+
+1. [A05_1a HTTP Beacon](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A05-C2-Beaconing-Network-Signaling/A05_1a)
+2. [A05_1b HTTPS Beacon with Command Polling](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A05-C2-Beaconing-Network-Signaling/A05_1b)
+3. [A05_2a DNS-Based Beaconing using `getaddrinfo`](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A05-C2-Beaconing-Network-Signaling/A05_2a)
+4. [A05_2b DNS-Based Beaconing using `DnsQueryA`](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A05-C2-Beaconing-Network-Signaling/A05_2b)
+5. [A05_3 Protocol Mimicry](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A05-C2-Beaconing-Network-Signaling/A05_3)
+6. [A05_4 TCP Reverse Shell / Interactive C2](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A05-C2-Beaconing-Network-Signaling/A05_4)
+7. [A05_5 TCP Bind shell / listening interactive C2](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A05-C2-Beaconing-Network-Signaling/A05_5)

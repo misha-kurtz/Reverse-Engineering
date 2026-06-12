@@ -1,14 +1,5 @@
 # A03 Dropper / Loader / Stager Class
 
-### Control Samples
-
-1. [A03_1 Minimal C++ embedded payload dropper](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A03-Dropper-Loader-Stager/A03_1)
-2. [A03_2 Download-and-execute stager](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A03-Dropper-Loader-Stager/A03_2)
-3. [A03_3 In-memory fileless shellcode loader](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A03-Dropper-Loader-Stager/A03_3)
-4. [A03_4 Obfuscated loader](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A03-Dropper-Loader-Stager/A03_4)
-5. [A03_5 Network-to-memory loader subclass](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A03-Dropper-Loader-Stager/A03_5)
-
-
 |ID|Technique|Dominant APIs / Mechanisms|Static Artifacts (Ghidra)|Dynamic Artifacts (Procmon / Sysmon / PCAP)|Semantic Meaning|
 |---|---|---|---|---|---|
 |**A03_1**|Embedded Payload Dropper|`CreateFileA`, `WriteFile`, `CreateProcessA`|Large embedded PE byte array, visible `MZ` / `PE` headers, DOS stub strings, hardcoded `payload.exe`, file-write logic|Creates `payload.exe`, writes embedded PE bytes to disk, launches child process, calc.exe-equivalent execution behavior|Stores a complete secondary executable internally, reconstructs it on disk, and executes it as a separate process|
@@ -16,3 +7,12 @@
 |**A03_3**|In-memory Fileless Shellcode Loader|`VirtualAlloc`, `memcpy`, `VirtualProtect`, `CreateThread`|Embedded raw shellcode byte array, visible `calc.exe` / `WinExec` strings, RW→RX memory transition logic, thread start at allocated memory|Private executable memory allocation, shellcode copied into memory, local thread creation, calc.exe spawned, **no payload written to disk**|Stages embedded shellcode directly into executable memory and executes it locally without creating a second-stage file|
 |**A03_4**|Obfuscated Fileless Shellcode Loader|Base64 decode, XOR decode loop (`0x5A`), `VirtualAlloc`, `Marshal.Copy`, `VirtualProtect`, `CreateThread`|Base64 blob, XOR decode loop, .NET P/Invoke imports, absence of clear payload strings before decoding, obfuscated embedded payload|Runtime Base64/XOR decoding, memory allocation, shellcode reconstruction in memory, executable memory transition, local thread creation, calc.exe spawned, **no payload written to disk**|Conceals shellcode from straightforward static analysis, reconstructs it only at runtime, and executes it entirely from memory|
 |**A03_5**|Fileless Network-to-Memory Loader|`WinHttpOpen`, `WinHttpConnect`, `WinHttpOpenRequest`, `WinHttpSendRequest`, `WinHttpReceiveResponse`, `WinHttpReadData`, `VirtualAlloc`, `VirtualProtect`, function-pointer execution|WinHTTP imports, raw payload retrieval logic, API-resolution structures, callable in-memory payload design, absence of dropped payload executable|HTTP retrieval of raw payload, executable memory allocation, in-memory payload staging, direct function-pointer execution, marker file creation from in-memory payload, **no payload written to disk**|Retrieves a raw payload directly from the network into memory, supplies runtime-resolved API pointers, and executes it entirely from volatile memory without disk staging|
+
+
+### Control Samples
+
+1. [A03_1 Minimal C++ embedded payload dropper](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A03-Dropper-Loader-Stager/A03_1)
+2. [A03_2 Download-and-execute stager](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A03-Dropper-Loader-Stager/A03_2)
+3. [A03_3 In-memory fileless shellcode loader](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A03-Dropper-Loader-Stager/A03_3)
+4. [A03_4 Obfuscated loader](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A03-Dropper-Loader-Stager/A03_4)
+5. [A03_5 Network-to-memory loader subclass](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A03-Dropper-Loader-Stager/A03_5)
