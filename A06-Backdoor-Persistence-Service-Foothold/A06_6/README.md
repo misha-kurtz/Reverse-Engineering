@@ -1,10 +1,11 @@
 # A06_6 DNS Polling Backdoor
 
->[!Lab Note]
-> This specimen requires a modified INetSim DNS implementation
-> capable of returning custom TXT-record responses. Standard 
-> INetSim installations will not provide the command-channel 
-> behavior demonstrated in this sample.
+> [!IMPORTANT]
+> This specimen requires a modified INetSim DNS 
+> implementation capable of returning custom TXT-record 
+> responses. Standard INetSim installations will not 
+> provide the command-channel behavior
+> demonstrated in this sample.
 
 ## Summary
 
