@@ -1,4 +1,4 @@
-# A02_3 Thread Hijacking
+# A02.3 Thread Hijacking
 
 ## Summary
 

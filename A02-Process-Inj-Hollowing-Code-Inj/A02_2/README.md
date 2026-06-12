@@ -1,4 +1,4 @@
-# A02_2 Remote Thread Injection
+# A02.2 Remote Thread Injection
 
 ## Summary
 
