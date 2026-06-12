@@ -52,7 +52,7 @@ This project aims to answer several core questions:
 - Regshot
 - Wireshark / PCAP
 - INetSim telemetry
-- Process and network monitoring
+- x64dbg / WinPmem
 
 ### Storage & Retrieval
 - MinIO object storage
