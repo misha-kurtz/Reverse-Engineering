@@ -1,0 +1,301 @@
+{
+    "sample_id": "A06_2",
+    "sample_name": "service_based_persistence_watchdog",
+    "dataset": "A",
+    "dataset_type": "controlled",
+    "behavior_class": "A06",
+    "behavior_class_name": "Backdoor Persistence Service Foothold Behavior Class",
+    "source_repository": "https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A06-Backdoor-Persistence-Service-Foothold/A06_2",
+    "language": "C and C++",
+    "platform": "Windows",
+    "build_architecture": "x64",
+    "primary_behavior": "persistence",
+    "technique": "windows_service_persistence",
+    "subtechnique": "auto_start_service_with_user_session_watchdog_launcher",
+    "execution_model": "auto_start_service_spawns_user_session_launcher_and_watchdog_payload",
+    "description": "Registers a Windows service named A06_2_Persistent_Service with automatic startup behavior. The service runs under the Windows Service Control Manager, monitors active user sessions, impersonates the logged-on user, launches a user-session instance of itself with a launcher argument, and then uses a timer-based watchdog loop to start and maintain a benign sample application in the interactive user session.",
+    "components": {
+        "persistent_service": {
+            "filename": "A06_2_persistent_service.exe",
+            "role": "self-installs as an auto-start Windows service, registers service control handlers, monitors user sessions, impersonates the active user, launches a user-session launcher instance, and maintains watchdog logic",
+            "source_origin": "custom controlled implementation"
+        },
+        "service_header": {
+            "filename": "PersistentService.h",
+            "role": "defines service name, launcher argument, window class name, timer identifier, and service function prototypes",
+            "source_origin": "custom controlled implementation"
+        },
+        "sample_payload": {
+            "filename": "A06_2_SampleApp.exe",
+            "role": "benign user-session payload launched and monitored by the service watchdog; writes periodic status messages to a log file",
+            "payload_type": "benign_watchdog_verification_payload",
+            "source_origin": "custom controlled implementation"
+        }
+    },
+    "key_apis": {
+        "service_installation": [
+            "OpenSCManager",
+            "CreateService",
+            "OpenService",
+            "StartService",
+            "ChangeServiceConfig2",
+            "CloseServiceHandle"
+        ],
+        "service_lifecycle": [
+            "StartServiceCtrlDispatcher",
+            "RegisterServiceCtrlHandlerEx",
+            "SetServiceStatus",
+            "CreateEvent",
+            "WaitForSingleObject",
+            "ControlService",
+            "DeleteService"
+        ],
+        "registry_configuration": [
+            "RegCreateKeyEx",
+            "RegOpenKeyEx",
+            "RegSetValueEx",
+            "RegQueryValueEx",
+            "RegCloseKey",
+            "SHDeleteKeyW"
+        ],
+        "session_and_token_handling": [
+            "WTSEnumerateSessions",
+            "WTSQuerySessionInformation",
+            "WTSQueryUserToken",
+            "WTSFreeMemory",
+            "GetTokenInformation",
+            "DuplicateTokenEx",
+            "ImpersonateLoggedOnUser",
+            "CreateEnvironmentBlock",
+            "CreateProcessAsUserW",
+            "DestroyEnvironmentBlock",
+            "RevertToSelf"
+        ],
+        "watchdog_launcher": [
+            "CreateMutexW",
+            "RegisterClassEx",
+            "CreateWindow",
+            "SetTimer",
+            "GetMessage",
+            "TranslateMessage",
+            "DispatchMessage",
+            "CreateToolhelp32Snapshot",
+            "Process32First",
+            "Process32Next",
+            "CreateProcessW"
+        ],
+        "logging_and_payload": [
+            "GetLocalTime",
+            "_wfopen_s",
+            "fwprintf",
+            "Sleep"
+        ]
+    },
+    "persistence_behavior": {
+        "persistence_type": "windows_service",
+        "service_name": "A06_2_Persistent_Service",
+        "service_display_name": "A06_2_Persistent_Service",
+        "service_type": "SERVICE_WIN32_OWN_PROCESS",
+        "startup_type": "SERVICE_AUTO_START",
+        "service_description": "A06_2 Service-Based Persistence Watchdog",
+        "requires_admin": true,
+        "survives_reboot": true,
+        "scope": "system_service",
+        "service_control_manager_used": true,
+        "self_installation": true
+    },
+    "service_behavior": {
+        "runs_as_service": true,
+        "service_control_dispatcher": true,
+        "service_status_reporting": true,
+        "accepted_controls": [
+            "SERVICE_ACCEPT_SHUTDOWN",
+            "SERVICE_ACCEPT_STOP",
+            "SERVICE_ACCEPT_SESSIONCHANGE"
+        ],
+        "session_change_handling": true,
+        "logon_event_handling": true,
+        "stop_event": "ghSvcStopEvent",
+        "service_log_path": "C:\\Users\\Public\\A06_2_Persistent_Service_log.txt"
+    },
+    "watchdog_behavior": {
+        "watchdog_enabled": true,
+        "target_payload_path": "C:\\Users\\Public\\A06_2_SampleApp.exe",
+        "configuration_registry_key": "HKLM\\SOFTWARE\\A06_2_Persistent_Service",
+        "configuration_value_name": "Path",
+        "timer_interval_ms": 10000,
+        "process_check_method": "CreateToolhelp32Snapshot with Process32First and Process32Next",
+        "launch_method": "CreateProcessW from user-session launcher instance",
+        "singleton_mutex": "Local\\A06_2_Launcher_Instance_Mutex",
+        "launcher_argument": "ServiceIsLauncher"
+    },
+    "user_session_behavior": {
+        "session_bridge": true,
+        "active_session_enumeration": true,
+        "active_user_token_required": true,
+        "impersonates_logged_on_user": true,
+        "creates_user_environment_block": true,
+        "service_to_user_process_creation": true,
+        "primary_user_process_api": "CreateProcessAsUserW",
+        "launcher_process": "A06_2_persistent_service.exe ServiceIsLauncher",
+        "payload_process": "A06_2_SampleApp.exe"
+    },
+    "payload_behavior": {
+        "payload_path": "C:\\Users\\Public\\A06_2_SampleApp.exe",
+        "payload_log_path": "C:\\Users\\Public\\A06_2_Persistent_Service_SampleApp_log.txt",
+        "execution_model": "continuous_user_session_loop",
+        "beacon_style_logging": true,
+        "beacon_interval_ms": 5000,
+        "writes_marker_file": false,
+        "writes_periodic_log": true,
+        "emits_debug_string": false,
+        "destructive_actions": false,
+        "secondary_payload_downloaded": false,
+        "command_execution": false
+    },
+    "network_behavior": {
+        "network_required": false,
+        "expected_network_activity": "none"
+    },
+    "expected_static_signals": {
+        "persistent_service": [
+            "service name string A06_2_Persistent_Service",
+            "SERVICE_AUTO_START service configuration",
+            "OpenSCManager usage",
+            "CreateService usage",
+            "StartService usage",
+            "ChangeServiceConfig2 usage",
+            "StartServiceCtrlDispatcher usage",
+            "RegisterServiceCtrlHandlerEx usage",
+            "SetServiceStatus usage",
+            "SERVICE_CONTROL_STOP handling",
+            "SERVICE_CONTROL_SHUTDOWN handling",
+            "SERVICE_CONTROL_SESSIONCHANGE handling",
+            "WTS_SESSION_LOGON handling",
+            "WTS_SESSION_LOGOFF handling",
+            "WTSEnumerateSessions usage",
+            "WTSQueryUserToken usage",
+            "DuplicateTokenEx usage",
+            "ImpersonateLoggedOnUser usage",
+            "CreateEnvironmentBlock usage",
+            "CreateProcessAsUserW usage",
+            "launcher argument ServiceIsLauncher",
+            "CreateMutexW singleton launcher mutex",
+            "CreateWindow hidden message-loop launcher",
+            "SetTimer watchdog loop",
+            "CreateToolhelp32Snapshot process enumeration",
+            "CreateProcessW used to launch target payload",
+            "HKLM\\SOFTWARE\\A06_2_Persistent_Service registry configuration key",
+            "Path registry value name",
+            "hardcoded payload path C:\\Users\\Public\\A06_2_SampleApp.exe",
+            "service log path C:\\Users\\Public\\A06_2_Persistent_Service_log.txt"
+        ],
+        "sample_payload": [
+            "hardcoded payload log path C:\\Users\\Public\\A06_2_Persistent_Service_SampleApp_log.txt",
+            "Sleep loop with 5000 millisecond interval",
+            "periodic beacon-style log message",
+            "absence of network APIs",
+            "absence of injection APIs",
+            "absence of credential access logic"
+        ]
+    },
+    "expected_dynamic_signals": {
+        "service": [
+            "A06_2_Persistent_Service is registered with the Service Control Manager",
+            "service startup type is automatic",
+            "service process starts under the Windows service framework",
+            "service writes entries to C:\\Users\\Public\\A06_2_Persistent_Service_log.txt",
+            "service responds to stop, shutdown, and session-change control events"
+        ],
+        "registry": [
+            "HKLM\\SOFTWARE\\A06_2_Persistent_Service is created",
+            "Path value is written under HKLM\\SOFTWARE\\A06_2_Persistent_Service",
+            "Path value points to C:\\Users\\Public\\A06_2_SampleApp.exe"
+        ],
+        "process": [
+            "A06_2_persistent_service.exe runs as the service process",
+            "service enumerates active WTS sessions",
+            "service obtains or attempts to obtain active user token",
+            "service launches a user-session instance of A06_2_persistent_service.exe with ServiceIsLauncher argument",
+            "launcher instance creates a window/message-loop context",
+            "launcher checks for A06_2_SampleApp.exe using process enumeration",
+            "launcher starts A06_2_SampleApp.exe if it is not already running",
+            "A06_2_SampleApp.exe continues running in a loop"
+        ],
+        "file_system": [
+            "C:\\Users\\Public\\A06_2_Persistent_Service_log.txt is created or appended",
+            "C:\\Users\\Public\\A06_2_Persistent_Service_SampleApp_log.txt is created or appended",
+            "payload log contains initialization message",
+            "payload log contains periodic alive/beacon messages"
+        ],
+        "host": [
+            "services.msc or sc.exe can show A06_2_Persistent_Service",
+            "Procmon may record service creation and registry configuration activity",
+            "Sysmon may record service installation if configured",
+            "Sysmon or Procmon may record CreateProcessAsUserW launching the user-session launcher",
+            "Sysmon or Procmon may record A06_2_SampleApp.exe process creation",
+            "Task Manager may show the sample payload running in the logged-on user session"
+        ],
+        "network": [
+            "no network activity is expected",
+            "no DNS activity is required",
+            "no HTTP or HTTPS traffic is required",
+            "no TCP command channel is opened"
+        ]
+    },
+    "code_placement": "Service installation, SCM registration, service lifecycle handling, registry configuration, WTS session enumeration, token duplication, impersonation, and user-session launcher creation are implemented in A06_2_persistent_service.exe. Watchdog process monitoring and payload launch logic are implemented in the launcher execution path of the same executable. Periodic benign payload logging is implemented in A06_2_SampleApp.exe.",
+    "execution_trigger": "The installer executable is manually executed first. If not launched by the Service Control Manager, it performs self-installation as an auto-start service. The service then starts at boot or when started manually, launches a user-session watchdog when an active user session is available, and the watchdog starts the sample payload if it is not already running.",
+    "execution_target": "Windows Service Control Manager, HKLM service configuration state, HKLM\\SOFTWARE\\A06_2_Persistent_Service configuration key, and controlled payload at C:\\Users\\Public\\A06_2_SampleApp.exe",
+    "semantic_meaning": "Demonstrates service-based persistence in which a durable auto-start Windows service acts as a watchdog and session bridge. The service persists across reboot, monitors user logon/session state, impersonates the active user, starts a user-session launcher, and maintains execution of a benign payload process.",
+    "mitre_attack_mapping": {
+        "tactic": "Persistence",
+        "technique_id": "T1543.003",
+        "technique_name": "Create or Modify System Process: Windows Service",
+        "related_techniques": [
+            {
+                "technique_id": "T1037",
+                "technique_name": "Boot or Logon Initialization Scripts",
+                "relationship": "conceptually related because execution is coordinated with user logon/session availability"
+            }
+        ]
+    },
+    "control_notes": {
+        "benign_intent": true,
+        "network_required": false,
+        "persistence": true,
+        "credential_access": false,
+        "destructive_actions": false,
+        "command_execution": false,
+        "command_polling": false,
+        "payload_download": false,
+        "interactive_channel": false,
+        "payload_effect": "maintains a benign user-session sample application that writes periodic status logs",
+        "payload_staged_to_disk": true,
+        "requires_admin": true,
+        "requires_service_control_manager": true,
+        "requires_interactive_user_session_for_payload": true
+    },
+    "success_conditions": [
+        "A06_2_persistent_service.exe is executed with administrative privileges",
+        "service creates or opens HKLM\\SOFTWARE\\A06_2_Persistent_Service",
+        "service writes Path value pointing to C:\\Users\\Public\\A06_2_SampleApp.exe",
+        "A06_2_Persistent_Service is registered with the Service Control Manager",
+        "service startup type is configured as automatic",
+        "service starts successfully",
+        "service transitions to SERVICE_RUNNING",
+        "service writes entries to C:\\Users\\Public\\A06_2_Persistent_Service_log.txt",
+        "an active user session is detected",
+        "service obtains the active user token using WTSQueryUserToken",
+        "service duplicates the token using DuplicateTokenEx",
+        "service creates a user environment block",
+        "service launches a user-session launcher instance using CreateProcessAsUserW",
+        "launcher instance starts with ServiceIsLauncher argument",
+        "launcher creates Local\\A06_2_Launcher_Instance_Mutex",
+        "launcher reads target payload path from HKLM\\SOFTWARE\\A06_2_Persistent_Service\\Path",
+        "launcher checks whether A06_2_SampleApp.exe is already running",
+        "launcher starts C:\\Users\\Public\\A06_2_SampleApp.exe if not running",
+        "A06_2_SampleApp.exe writes initialization message to C:\\Users\\Public\\A06_2_Persistent_Service_SampleApp_log.txt",
+        "A06_2_SampleApp.exe writes periodic alive/beacon log messages every five seconds",
+        "no network traffic or secondary payload download occurs"
+    ]
+}

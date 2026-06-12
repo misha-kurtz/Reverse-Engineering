@@ -1,0 +1,170 @@
+{
+    "sample_id": "A06_1a",
+    "sample_name": "registry_run_key_persistence",
+    "dataset": "A",
+    "dataset_type": "controlled",
+    "behavior_class": "A06",
+    "behavior_class_name": "Backdoor Persistence Service Foothold Behavior Class",
+    "source_repository": "https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A06-Backdoor-Persistence-Service-Foothold/A06_1a",
+    "language": "C++",
+    "platform": "Windows",
+    "build_architecture": "x64",
+    "primary_behavior": "persistence",
+    "technique": "registry_run_key_persistence",
+    "subtechnique": "current_user_run_key_logon_persistence",
+    "execution_model": "user_logon_triggered_autostart",
+    "description": "Creates user-level persistence by writing a REG_SZ value under the current user's Run key. The value name is derived from the system MachineGuid and the value data points to a controlled marker executable placed in C:\\Users\\Public. On user logon or reboot, Windows automatically launches the marker executable, which writes a benign confirmation artifact for dynamic analysis.",
+    "components": {
+        "persistence_installer": {
+            "filename": "A06_1a_registry_run_persistence.exe",
+            "role": "retrieves the MachineGuid, normalizes it, opens or creates the HKCU Run key, and writes a persistence value pointing to the marker executable",
+            "source_origin": "custom controlled implementation"
+        },
+        "marker_payload": {
+            "filename": "A06_1a_persistence_marker.exe",
+            "role": "benign executable launched by the Run-key entry to confirm persistence execution through a marker file and debug string",
+            "payload_type": "benign_persistence_verification_marker",
+            "source_origin": "custom controlled implementation"
+        }
+    },
+    "key_apis": {
+        "persistence_installer": [
+            "RegOpenKeyExW",
+            "RegCreateKeyExW",
+            "RegQueryValueExW",
+            "RegSetValueExW",
+            "RegCloseKey"
+        ],
+        "marker_payload": [
+            "Sleep",
+            "GetCurrentProcessId",
+            "CreateToolhelp32Snapshot",
+            "Process32First",
+            "Process32Next",
+            "CloseHandle",
+            "GetModuleFileNameA",
+            "GetLocalTime",
+            "CreateFileA",
+            "WriteFile",
+            "OutputDebugStringA"
+        ]
+    },
+    "persistence_behavior": {
+        "persistence_type": "registry_run_key",
+        "registry_hive": "HKEY_CURRENT_USER",
+        "registry_path": "Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+        "registry_view": "64-bit",
+        "value_type": "REG_SZ",
+        "value_name_source": "HKLM\\SOFTWARE\\Microsoft\\Cryptography\\MachineGuid",
+        "value_name_transform": "removes braces, hyphens, and spaces from MachineGuid",
+        "value_data": "\"C:\\Users\\Public\\A06_1a_persistence_marker.exe\"",
+        "requires_admin": false,
+        "trigger": "user_logon",
+        "survives_reboot": true,
+        "scope": "current_user"
+    },
+    "payload_behavior": {
+        "marker_path": "C:\\Users\\Public\\A06_1a_persistence_marker.exe",
+        "confirmation_artifact": "C:\\Users\\Public\\A06_1a_RunKeyPersistence_OK.txt",
+        "execution_delay_ms": 10000,
+        "writes_marker_file": true,
+        "emits_debug_string": true,
+        "destructive_actions": false,
+        "secondary_payload_downloaded": false,
+        "command_execution": false
+    },
+    "expected_static_signals": {
+        "persistence_installer": [
+            "HKCU Run key path string",
+            "HKLM MachineGuid registry path string",
+            "RegOpenKeyExW usage",
+            "RegCreateKeyExW fallback behavior",
+            "RegQueryValueExW used to read MachineGuid",
+            "RegSetValueExW used to write persistence value",
+            "KEY_WOW64_64KEY registry access flag",
+            "hardcoded marker path C:\\Users\\Public\\A06_1a_persistence_marker.exe",
+            "REG_SZ persistence value data",
+            "Advapi32.lib linkage"
+        ],
+        "marker_payload": [
+            "Sleep delay before artifact creation",
+            "CreateToolhelp32Snapshot usage",
+            "Process32First and Process32Next process enumeration",
+            "GetCurrentProcessId usage",
+            "GetModuleFileNameA usage",
+            "GetLocalTime timestamp collection",
+            "CreateFileA writes marker artifact",
+            "WriteFile writes persistence confirmation content",
+            "OutputDebugStringA emits confirmation string",
+            "hardcoded marker output path C:\\Users\\Public\\A06_1a_RunKeyPersistence_OK.txt"
+        ]
+    },
+    "expected_dynamic_signals": {
+        "registry": [
+            "new REG_SZ value created under HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+            "Run-key value name resembles normalized MachineGuid",
+            "Run-key value data points to C:\\Users\\Public\\A06_1a_persistence_marker.exe"
+        ],
+        "process": [
+            "A06_1a_registry_run_persistence.exe runs as the installer process",
+            "A06_1a_persistence_marker.exe executes after user logon or reboot",
+            "marker process records its PID and parent PID",
+            "marker process exits after writing confirmation artifact"
+        ],
+        "file_system": [
+            "C:\\Users\\Public\\A06_1a_RunKeyPersistence_OK.txt is created",
+            "marker file contains timestamp, PID, parent PID, process path, persistence type, trigger, and confirmation status"
+        ],
+        "host": [
+            "Procmon may record RegSetValue activity against the HKCU Run key",
+            "Regshot may show added Run-key value",
+            "Sysmon may record registry value set activity if configured",
+            "Sysmon or Procmon may record marker process creation during logon",
+            "debug output may contain THESIS_A06_1A_RUNKEY_PERSISTENCE_TRIGGERED"
+        ],
+        "network": [
+            "no network activity is expected",
+            "no DNS activity is required",
+            "no HTTP or HTTPS traffic is required",
+            "no TCP command channel is opened"
+        ]
+    },
+    "code_placement": "MachineGuid retrieval, registry Run-key creation, and persistence value writing are implemented in the installer executable. Delayed execution, parent PID discovery, timestamp collection, marker file creation, and debug-string emission are implemented in the separate marker executable.",
+    "execution_trigger": "The installer executes manually. The persistence payload executes automatically during subsequent user logon or reboot through the HKCU Run key.",
+    "execution_target": "Current user's Run key and controlled marker executable at C:\\Users\\Public\\A06_1a_persistence_marker.exe",
+    "semantic_meaning": "Demonstrates classic user-level Windows Run-key persistence where an autostart registry value causes a benign marker executable to run during user logon, producing host artifacts that confirm persistence installation and execution.",
+    "mitre_attack_mapping": {
+        "tactic": "Persistence",
+        "technique_id": "T1060",
+        "technique_name": "Registry Run Keys / Startup Folder",
+        "note": "Modern ATT&CK versions commonly represent this behavior under Boot or Logon Autostart Execution: Registry Run Keys / Startup Folder."
+    },
+    "control_notes": {
+        "benign_intent": true,
+        "network_required": false,
+        "persistence": true,
+        "credential_access": false,
+        "destructive_actions": false,
+        "command_execution": false,
+        "command_polling": false,
+        "payload_download": false,
+        "interactive_channel": false,
+        "payload_effect": "writes a controlled marker file confirming Run-key persistence execution",
+        "payload_staged_to_disk": true
+    },
+    "success_conditions": [
+        "installer successfully reads HKLM\\SOFTWARE\\Microsoft\\Cryptography\\MachineGuid",
+        "installer normalizes the MachineGuid by removing braces, hyphens, and spaces",
+        "installer opens or creates HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+        "installer writes a REG_SZ Run-key value",
+        "Run-key value name matches the normalized MachineGuid",
+        "Run-key value data points to C:\\Users\\Public\\A06_1a_persistence_marker.exe",
+        "user logs off and back on or reboots the Windows analysis VM",
+        "Windows launches A06_1a_persistence_marker.exe through the Run-key mechanism",
+        "marker waits briefly before writing its artifact",
+        "marker creates C:\\Users\\Public\\A06_1a_RunKeyPersistence_OK.txt",
+        "marker artifact contains THESIS_A06_1A_RUNKEY_PERSISTENCE_TRIGGERED",
+        "marker artifact records timestamp, PID, parent PID, process path, persistence type, execution trigger, and confirmation status",
+        "no network traffic or secondary payload download occurs"
+    ]
+}
