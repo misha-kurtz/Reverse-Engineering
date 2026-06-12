@@ -7,6 +7,8 @@ A retrieval-augmented malware reverse-engineering assistant that combines static
 
 The goal of this project is to generate high-level, semantically enriched reconstructions of malicious program behavior that are more understandable and actionable for reverse engineers than baseline decompiler output alone.
 
+## Malware Lab Topology
+
 <img src="images/topology.png" width="400"/>
 
 
