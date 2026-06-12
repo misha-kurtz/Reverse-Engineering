@@ -1,7 +1,3 @@
-Here’s a **clean, fully aligned README** for `A06_3b_COM_event_persist` that matches your dataset style and clearly differentiates it from 3a/3c/3d.
-
----
-
 # A06_3b COM Event-Triggered Scheduled Task Persistence
 
 ## Summary
