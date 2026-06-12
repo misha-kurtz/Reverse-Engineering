@@ -1,4 +1,4 @@
-# A02_1 DLL Injection via LoadLibrary Remote Thread
+# A02.1 DLL Injection via LoadLibrary Remote Thread
 
 ## Summary
 
