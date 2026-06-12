@@ -1,4 +1,4 @@
-# A06.3b COM Event-Triggered Scheduled Task Persistence
+# A06.3b COM-Based Event-Triggered Task Persistence
 
 ## Summary
 
