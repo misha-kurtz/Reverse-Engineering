@@ -1,4 +1,4 @@
-# A06.3a COM-Based Logon-Triggered Scheduled Task Persistence
+# A06.3a COM-Based Logon-Triggered Task Persistence
 
 ## Summary
 
