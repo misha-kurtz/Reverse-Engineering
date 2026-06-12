@@ -5,7 +5,8 @@
 > implementation capable of returning custom TXT-record 
 > responses. Standard INetSim installations will not 
 > provide the command-channel behavior
-> demonstrated in this sample. See below for coniguration details.
+> demonstrated in this sample. See below for configuration 
+> details.
 
 ## Summary
 
