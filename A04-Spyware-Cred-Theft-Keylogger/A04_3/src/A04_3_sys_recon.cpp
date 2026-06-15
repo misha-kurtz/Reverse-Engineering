@@ -20,7 +20,7 @@
 using namespace std;
 
 // Global Configuration Elements
-const string logPath = "C:\\Users\\Public\\A04_3_System_Host_Recon_log.txt";
+const string logPath = "C:\\Users\\Public\\A04_3_System_Host_Recon_OK.txt";
 string systemuser;
 
 void getusername(void)
@@ -79,7 +79,7 @@ void storemacaddress(void)
         sysfile.close();
     }
 
-    system("getmac >> C:\\Users\\Public\\A04_3_System_Host_Recon_log.txt");
+    system("getmac >> C:\\Users\\Public\\A04_3_System_Host_Recon_OK.txt");
 
     sysfile.open(logPath.c_str(), ios::app);
     if (sysfile.is_open())
@@ -98,7 +98,7 @@ void storeipaddress(void)
         sysfile.close();
     }
 
-    system("ipconfig /all >> C:\\Users\\Public\\A04_3_System_Host_Recon_log.txt");
+    system("ipconfig /all >> C:\\Users\\Public\\A04_3_System_Host_Recon_OK.txt");
 
     sysfile.open(logPath.c_str(), ios::app);
     if (sysfile.is_open())
@@ -117,7 +117,7 @@ void storeexternalip(void)
         sysfile.close();
     }
 
-    system("nslookup myip.opendns.com resolver1.opendns.com >> C:\\Users\\Public\\A04_3_System_Host_Recon_log.txt");
+    system("nslookup myip.opendns.com resolver1.opendns.com >> C:\\Users\\Public\\A04_3_System_Host_Recon_OK.txt");
 
     sysfile.open(logPath.c_str(), ios::app);
     if (sysfile.is_open())
@@ -136,7 +136,7 @@ void storeroutingtable(void)
         sysfile.close();
     }
 
-    system("route print >> C:\\Users\\Public\\A04_3_System_Host_Recon_log.txt");
+    system("route print >> C:\\Users\\Public\\A04_3_System_Host_Recon_OK.txt");
 
     sysfile.open(logPath.c_str(), ios::app);
     if (sysfile.is_open())
@@ -155,7 +155,7 @@ void storeuseraccounts(void)
         sysfile.close();
     }
 
-    system("net user >> C:\\Users\\Public\\A04_3_System_Host_Recon_log.txt");
+    system("net user >> C:\\Users\\Public\\A04_3_System_Host_Recon_OK.txt");
 
     sysfile.open(logPath.c_str(), ios::app);
     if (sysfile.is_open())
@@ -174,7 +174,7 @@ void storelocalgroups(void)
         sysfile.close();
     }
 
-    system("net localgroup >> C:\\Users\\Public\\A04_3_System_Host_Recon_log.txt");
+    system("net localgroup >> C:\\Users\\Public\\A04_3_System_Host_Recon_OK.txt");
 
     sysfile.open(logPath.c_str(), ios::app);
     if (sysfile.is_open())
@@ -193,7 +193,7 @@ void storenetworkconnections(void)
         sysfile.close();
     }
 
-    system("netstat -ano >> C:\\Users\\Public\\A04_3_System_Host_Recon_log.txt");
+    system("netstat -ano >> C:\\Users\\Public\\A04_3_System_Host_Recon_OK.txt");
 
     sysfile.open(logPath.c_str(), ios::app);
     if (sysfile.is_open())
@@ -212,7 +212,7 @@ void storeprocesslist(void)
         sysfile.close();
     }
 
-    system("tasklist /v >> C:\\Users\\Public\\A04_3_System_Host_Recon_log.txt");
+    system("tasklist /v >> C:\\Users\\Public\\A04_3_System_Host_Recon_OK.txt");
 
     sysfile.open(logPath.c_str(), ios::app);
     if (sysfile.is_open())
@@ -232,7 +232,7 @@ void storeinstalledapps(void)
         sysfile.close();
     }
 
-    system("reg query HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall /s /v DisplayName 2>nul | findstr DisplayName >> C:\\Users\\Public\\A04_3_System_Host_Recon_log.txt");
+    system("reg query HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall /s /v DisplayName 2>nul | findstr DisplayName >> C:\\Users\\Public\\A04_3_System_Host_Recon_OK.txt");
 
     sysfile.open(logPath.c_str(), ios::app);
     if (sysfile.is_open())
@@ -241,7 +241,7 @@ void storeinstalledapps(void)
         sysfile.close();
     }
 
-    system("reg query HKLM\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall /s /v DisplayName 2>nul | findstr DisplayName >> C:\\Users\\Public\\A04_3_System_Host_Recon_log.txt");
+    system("reg query HKLM\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall /s /v DisplayName 2>nul | findstr DisplayName >> C:\\Users\\Public\\A04_3_System_Host_Recon_OK.txt");
 
     sysfile.open(logPath.c_str(), ios::app);
     if (sysfile.is_open())
@@ -261,7 +261,7 @@ void storehotfixes(void)
     }
 
     // Queries the Quick Fix Engineering management framework for installed patch data
-    system("wmic qfe get HotFixID,Description,InstalledOn >> C:\\Users\\Public\\A04_3_System_Host_Recon_log.txt 2>nul");
+    system("wmic qfe get HotFixID,Description,InstalledOn >> C:\\Users\\Public\\A04_3_System_Host_Recon_OK.txt 2>nul");
 
     sysfile.open(logPath.c_str(), ios::app);
     if (sysfile.is_open())
