@@ -191,7 +191,7 @@ dns_default_ip 192.168.67.5
 
 dns_default_domainname lab.local
 
-dns_static agent77.cmd.lab.local 192.168.67.3
+dns_static agent77.cmd.lab.local 192.168.67.5
 ```
 
 ---
