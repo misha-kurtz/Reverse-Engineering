@@ -37,3 +37,8 @@ sudo tail -f /var/log/inetsim/service.log
 # View captured POST data
 sudo cat /var/lib/inetsim/http/postdata/*
 ```
+
+``` bash
+# To delete old POST data
+sudo find /var/lib/inetsim/http/postdata -type f -delete
+```

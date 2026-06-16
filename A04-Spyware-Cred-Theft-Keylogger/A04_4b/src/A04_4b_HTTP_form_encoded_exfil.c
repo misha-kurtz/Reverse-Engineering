@@ -1,7 +1,6 @@
 /*
-   A04_4b: Spyware Data Pipeline Control Sample (Form-Encoded Variant)
+   A04_4b: Data Exfiltration Control Sample (Form-Encoded Variant)
    Behavioral Scope: Local system metric aggregation and Form-Encoded HTTP serialization.
-   Webcam, video processing, and persistence elements are omitted.
 */
 
 #include <windows.h>
