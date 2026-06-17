@@ -1,5 +1,5 @@
 
-# Malware Reverse Engineering RAG Pipeline
+# Malware Reverse Engineering Multimodal RAG Pipeline
 
 ## Project Objective
 
