@@ -6,7 +6,8 @@
 # Files
 .gitattributes
 !.gitignore
-temp.cpp
-A01-Ransomware-Cryptor/A01_2/src/temp.cs
-A01-Ransomware-Cryptor/A01_2/src/temp2.cpp
+**/temp.cpp
+**/temp.cs
 **/temp2.cpp
+**/temp2.cs
+
