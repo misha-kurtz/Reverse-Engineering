@@ -17,7 +17,7 @@ namespace A01_1_Decrypter
         private Label label3;
 
         private const string KeyPath = @"C:\Users\Public\A01_1_Lab_Encryption_Key.txt";
-        private const string TargetPath = @"C:\Users\Public\A01_1_TestData";
+        private const string TargetPath = @"C:\Users\Public\A01_TestData";
 
         public Form1()
         {
