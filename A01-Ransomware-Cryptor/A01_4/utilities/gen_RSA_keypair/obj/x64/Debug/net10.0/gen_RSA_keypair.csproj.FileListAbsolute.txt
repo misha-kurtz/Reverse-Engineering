@@ -1,0 +1,15 @@
+V:\Reverse-Engineering\A01-Ransomware-Cryptor\A01_4\utilities\gen_RSA_keypair\bin\x64\Debug\net10.0\gen_RSA_keypair.exe
+V:\Reverse-Engineering\A01-Ransomware-Cryptor\A01_4\utilities\gen_RSA_keypair\bin\x64\Debug\net10.0\gen_RSA_keypair.deps.json
+V:\Reverse-Engineering\A01-Ransomware-Cryptor\A01_4\utilities\gen_RSA_keypair\bin\x64\Debug\net10.0\gen_RSA_keypair.runtimeconfig.json
+V:\Reverse-Engineering\A01-Ransomware-Cryptor\A01_4\utilities\gen_RSA_keypair\bin\x64\Debug\net10.0\gen_RSA_keypair.dll
+V:\Reverse-Engineering\A01-Ransomware-Cryptor\A01_4\utilities\gen_RSA_keypair\bin\x64\Debug\net10.0\gen_RSA_keypair.pdb
+V:\Reverse-Engineering\A01-Ransomware-Cryptor\A01_4\utilities\gen_RSA_keypair\obj\x64\Debug\net10.0\gen_RSA_keypair.GeneratedMSBuildEditorConfig.editorconfig
+V:\Reverse-Engineering\A01-Ransomware-Cryptor\A01_4\utilities\gen_RSA_keypair\obj\x64\Debug\net10.0\gen_RSA_keypair.AssemblyInfoInputs.cache
+V:\Reverse-Engineering\A01-Ransomware-Cryptor\A01_4\utilities\gen_RSA_keypair\obj\x64\Debug\net10.0\gen_RSA_keypair.AssemblyInfo.cs
+V:\Reverse-Engineering\A01-Ransomware-Cryptor\A01_4\utilities\gen_RSA_keypair\obj\x64\Debug\net10.0\gen_RSA_keypair.csproj.CoreCompileInputs.cache
+V:\Reverse-Engineering\A01-Ransomware-Cryptor\A01_4\utilities\gen_RSA_keypair\obj\x64\Debug\net10.0\gen_RSA_keypair.sourcelink.json
+V:\Reverse-Engineering\A01-Ransomware-Cryptor\A01_4\utilities\gen_RSA_keypair\obj\x64\Debug\net10.0\gen_RSA_keypair.dll
+V:\Reverse-Engineering\A01-Ransomware-Cryptor\A01_4\utilities\gen_RSA_keypair\obj\x64\Debug\net10.0\refint\gen_RSA_keypair.dll
+V:\Reverse-Engineering\A01-Ransomware-Cryptor\A01_4\utilities\gen_RSA_keypair\obj\x64\Debug\net10.0\gen_RSA_keypair.pdb
+V:\Reverse-Engineering\A01-Ransomware-Cryptor\A01_4\utilities\gen_RSA_keypair\obj\x64\Debug\net10.0\gen_RSA_keypair.genruntimeconfig.cache
+V:\Reverse-Engineering\A01-Ransomware-Cryptor\A01_4\utilities\gen_RSA_keypair\obj\x64\Debug\net10.0\ref\gen_RSA_keypair.dll
