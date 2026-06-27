@@ -2,6 +2,7 @@
 .vscode/
 **/src/bin/
 **/src/obj/
+!A01-Ransomware-Cryptor/A01_4/utilities/decrypt_AES_key
 
 # Files
 .gitattributes
