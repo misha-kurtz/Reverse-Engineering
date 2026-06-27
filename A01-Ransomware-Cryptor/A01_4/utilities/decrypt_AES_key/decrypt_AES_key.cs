@@ -8,9 +8,9 @@ class Program
 {
     static void Main()
     {
-        string privateKeyXml = File.ReadAllText("A01_4_private_key.xml");
+        string privateKeyXml = File.ReadAllText("C:\\Users\\misha.kurtz\\Reverse-Engineering\\A01-Ransomware-Cryptor\\A01_4\\utilities\\decrypt_AES_key\\A01_4_private_key.xml");
 
-        string postedValue = File.ReadAllText("posted_aesencrypted.txt").Trim();
+        string postedValue = File.ReadAllText("C:\\Users\\misha.kurtz\\Reverse-Engineering\\A01-Ransomware-Cryptor\\A01_4\\utilities\\decrypt_AES_key\\posted_aesencrypted.txt").Trim();
 
         byte[] encryptedAesKey = Convert.FromBase64String(postedValue);
 
