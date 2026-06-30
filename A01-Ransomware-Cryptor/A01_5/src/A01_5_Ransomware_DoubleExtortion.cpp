@@ -1,4 +1,4 @@
-// EDA2 variant with exfil of files to C2 server prior to encryption
+// A01_5 EDA2 variant with exfil of files to C2 server prior to encryption
 #include <iostream>
 #include <string>
 #include <vector>
