@@ -1,4 +1,4 @@
-// A01_5 Decrypter for controlled double-extortion ransomware sample
+// A01_5 Decrypter for EDA2 variant with double extortion functionality
 #include <iostream>
 #include <string>
 #include <vector>

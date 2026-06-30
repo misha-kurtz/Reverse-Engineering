@@ -1,3 +1,4 @@
+//A01_2 Decrypter for Hidden-Tear variant with local encryption and ransomnote functionality
 #include <iostream>
 #include <string>
 #include <vector>

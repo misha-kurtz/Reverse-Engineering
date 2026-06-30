@@ -1,3 +1,4 @@
+//A01_1 Decrypter for Hidden-Tear variant with local encryption only
 using System;
 using System.IO;
 using System.Linq;
