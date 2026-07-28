@@ -270,6 +270,12 @@ BOOL decrypt_file(
         return FALSE;
     }
 
+    printf(
+        "Ciphertext file size: %ld bytes\n"
+        "Ciphertext mod 16: %ld\n",
+        file_size,
+        file_size % 16);
+
     if (fseek(input, 0, SEEK_SET) != 0)
     {
         fclose(input);

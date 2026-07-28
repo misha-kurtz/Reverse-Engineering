@@ -394,6 +394,15 @@ void encrypt_file(
     {
         return;
     }
+    printf(
+        "Encrypting: %s\n"
+        "Plaintext size : %ld\n"
+        "Ciphertext size: %zu\n"
+        "Ciphertext mod16: %zu\n\n",
+        file,
+        file_size,
+        encrypted_len,
+        encrypted_len % 16);
 
     FILE *output = fopen(file, "wb");
 
@@ -408,6 +417,12 @@ void encrypt_file(
         1,
         encrypted_len,
         output);
+
+    printf(
+        "Requested write: %zu bytes\n"
+        "Actual write: %zu bytes\n",
+        encrypted_len,
+        bytes_written);
 
     fclose(output);
     free(bytes_encrypted);
