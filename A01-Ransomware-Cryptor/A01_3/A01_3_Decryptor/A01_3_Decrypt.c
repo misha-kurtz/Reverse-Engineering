@@ -219,6 +219,8 @@ BOOL decrypt_file(
     const char *extension =
         PathFindExtensionA(file);
 
+    printf("Extension = %s\n", extension);
+
     char ext_lower[MAX_PATH];
 
     strncpy(
@@ -232,6 +234,7 @@ BOOL decrypt_file(
 
     if (strcmp(ext_lower, ".locked") != 0)
     {
+        printf("Skipping (not locked): %s\n", file);
         return FALSE;
     }
 
@@ -378,6 +381,7 @@ void decrypt_directory(
         return;
     }
 
+    printf("Entering directory: %s\n", location);
     char search_path[MAX_PATH];
 
     int search_result = snprintf(
@@ -401,6 +405,9 @@ void decrypt_directory(
 
     if (hFind == INVALID_HANDLE_VALUE)
     {
+        printf("FindFirstFile failed for %s (error %lu)\n",
+               location,
+               GetLastError());
         return;
     }
 
@@ -424,8 +431,12 @@ void decrypt_directory(
         if (path_result < 0 ||
             path_result >= (int)sizeof(full_path))
         {
+            printf(
+                "Path construction failed or was truncated.\n");
             continue;
         }
+
+        printf("Found: %s\n", full_path);
 
         /*
          * Avoid following junctions and symbolic links.
@@ -445,6 +456,7 @@ void decrypt_directory(
         }
         else
         {
+            printf("Attempting decrypt: %s\n", full_path);
             decrypt_file(
                 full_path,
                 key);
@@ -479,8 +491,11 @@ const char *EnumBackupVolume(void)
 
     while (*driveLetter)
     {
+        printf("Checking drive: %s\n", driveLetter);
         UINT driveType =
             GetDriveTypeA(driveLetter);
+
+        printf("Drive type: %u\n", driveType);
 
         if (driveType == DRIVE_FIXED ||
             driveType == DRIVE_REMOTE)
@@ -515,7 +530,7 @@ BOOL InspectVolume(const char *driveLetter)
     DWORD maxComponentLength = 0;
     DWORD flags = 0;
 
-    if (GetVolumeInformationA(
+    if (!GetVolumeInformationA(
             driveLetter,
             volumeName,
             sizeof(volumeName),
@@ -525,13 +540,30 @@ BOOL InspectVolume(const char *driveLetter)
             fileSystemName,
             sizeof(fileSystemName)))
     {
-        if (strstr(volumeName, "Backup") != NULL ||
-            strstr(volumeName, "BACKUP") != NULL)
-        {
-            return TRUE;
-        }
+        printf(
+            "GetVolumeInformation failed for %s "
+            "(error %lu)\n",
+            driveLetter,
+            GetLastError());
+
+        return FALSE;
     }
 
+    printf(
+        "Drive: %s | Volume label: '%s' | "
+        "File system: %s\n",
+        driveLetter,
+        volumeName,
+        fileSystemName);
+
+    if (strstr(volumeName, "Backup") != NULL ||
+        strstr(volumeName, "BACKUP") != NULL)
+    {
+        printf("Backup volume FOUND!\n");
+        return TRUE;
+    }
+
+    printf("Not the backup volume.\n");
     return FALSE;
 }
 
@@ -560,13 +592,36 @@ int main(void)
     const char *backupDrive =
         EnumBackupVolume();
 
-    if (backupDrive != NULL &&
-        PathFileExistsA(backupDrive) &&
-        PathIsDirectoryA(backupDrive))
+    if (backupDrive == NULL)
     {
-        decrypt_directory(
-            backupDrive,
-            key);
+        printf("EnumBackupVolume returned NULL\n");
+    }
+    else
+    {
+        printf("Backup drive = %s\n", backupDrive);
+
+        BOOL exists =
+            PathFileExistsA(backupDrive);
+
+        BOOL is_directory =
+            PathIsDirectoryA(backupDrive);
+
+        printf("PathFileExists = %d\n", exists);
+        printf("PathIsDirectory = %d\n", is_directory);
+
+        if (exists && is_directory)
+        {
+            printf("Beginning decrypt on %s\n",
+                   backupDrive);
+
+            decrypt_directory(
+                backupDrive,
+                key);
+        }
+        else
+        {
+            printf("Backup drive path validation failed.\n");
+        }
     }
 
     /*
