@@ -1,0 +1,5 @@
+create vdisk file="C:\BackupDrive.vhdx" maximum=1000 type=expandable
+attach vdisk
+create partition primary
+format fs=ntfs label="1GB_Backup" quick
+assign letter=D
