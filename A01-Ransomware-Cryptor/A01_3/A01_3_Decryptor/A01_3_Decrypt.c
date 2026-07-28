@@ -191,6 +191,12 @@ unsigned char *aes_decrypt(
             decrypted,
             &data_len))
     {
+        DWORD error = GetLastError();
+
+        printf(
+            "CryptDecrypt failed with Windows error %lu\n",
+            error);
+
         free(decrypted);
         decrypted = NULL;
     }
@@ -242,9 +248,14 @@ BOOL decrypt_file(
 
     if (input == NULL)
     {
+        printf(
+            "FAILED: Unable to open encrypted file: %s\n",
+            file);
+
         return FALSE;
     }
 
+    printf("Opened encrypted file successfully.\n");
     if (fseek(input, 0, SEEK_END) != 0)
     {
         fclose(input);
@@ -301,13 +312,27 @@ BOOL decrypt_file(
 
     if (decrypted == NULL)
     {
+        printf(
+            "FAILED: AES decryption failed for: %s\n",
+            file);
+
         return FALSE;
     }
+
+    printf(
+        "AES decryption succeeded: %s "
+        "(plaintext size: %zu bytes)\n",
+        file,
+        decrypted_len);
 
     FILE *output = fopen(file, "wb");
 
     if (output == NULL)
     {
+        printf(
+            "FAILED: Unable to open file for writing: %s\n",
+            file);
+
         free(decrypted);
         return FALSE;
     }
@@ -328,8 +353,16 @@ BOOL decrypt_file(
 
     if (bytes_written != decrypted_len)
     {
+        printf(
+            "FAILED: Only wrote %zu of %zu bytes: %s\n",
+            bytes_written,
+            decrypted_len,
+            file);
+
         return FALSE;
     }
+
+    printf("Decrypted content written successfully.\n");
 
     /*
      * Remove the final ".locked" extension.
@@ -365,8 +398,21 @@ BOOL decrypt_file(
             restored_name,
             MOVEFILE_REPLACE_EXISTING))
     {
+        printf(
+            "FAILED: Could not rename\n"
+            "  Source: %s\n"
+            "  Target: %s\n"
+            "  Windows error: %lu\n",
+            file,
+            restored_name,
+            GetLastError());
+
         return FALSE;
     }
+
+    printf(
+        "SUCCESS: Restored %s\n",
+        restored_name);
 
     return TRUE;
 }
@@ -457,9 +503,12 @@ void decrypt_directory(
         else
         {
             printf("Attempting decrypt: %s\n", full_path);
-            decrypt_file(
-                full_path,
-                key);
+            if (!decrypt_file(full_path, key))
+            {
+                printf(
+                    "Decrypt operation failed: %s\n",
+                    full_path);
+            }
         }
 
     } while (FindNextFileA(
