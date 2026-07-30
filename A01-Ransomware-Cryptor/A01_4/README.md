@@ -161,24 +161,6 @@ Place the [PNG ransomnote image](https://github.com/misha-kurtz/Reverse-Engineer
 /var/lib/inetsim/http/fakefiles/A01_4_ransomnote.png
 ```
 
-The file must contain actual JPEG data because the sample saves the response as:
-
-```text
-C:\Users\<username>\ransom.jpg
-```
-
-and attempts to apply it as the Windows wallpaper.
-
-
-Confirm that the account used by INetSim can read the files:
-
-```bash
-sudo chmod 644 \
-    /var/lib/inetsim/http/fakefiles/publickey.xml \
-    /var/lib/inetsim/http/fakefiles/savekey_OK.json \
-    /var/lib/inetsim/http/fakefiles/A01_4_ransomnote.jpg
-```
-
 ---
 
 ### 5. Configure HTTP Mappings in `/etc/inetsim/inetsim.conf`
