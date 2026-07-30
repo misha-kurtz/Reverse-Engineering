@@ -152,7 +152,7 @@ cat /var/lib/inetsim/http/fakefiles/savekey_OK.json
 {"status":"ok","task":"Saved encrypted AES key"}
 ```
 
-Place the PNG ransomnote image at:
+Place the [PNG ransomnote image](https://github.com/misha-kurtz/Reverse-Engineering/blob/main/A01-Ransomware-Cryptor/A01_4/A01_4_ransomnote.png) at:
 
 ```text
 /var/lib/inetsim/http/fakefiles/A01_4_ransomnote.png
