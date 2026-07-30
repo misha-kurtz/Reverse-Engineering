@@ -1,4 +1,4 @@
-# A01_2 `C++` Hidden-Tear Variant: Encryption + Coercion
+# A01.2 `C++` Hidden-Tear Variant: Encryption + Coercion
 
 ## Summary
 

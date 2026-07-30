@@ -1,5 +1,5 @@
 
-# A01_3 `C` Hidden-Tear Variant: Encryption + Recovery Inhibition
+# A01.3 `C` Hidden-Tear Variant: Encryption + Recovery Inhibition
 
 ## Summary
 
