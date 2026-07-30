@@ -1,5 +1,5 @@
 
-# A01.4 `C#` EDA2 Variant: Local Encryption + Key Exfil to C2
+# A01.4 EDA2: Local Encryption + Key Exfil to C2
 
 ## Summary
 
