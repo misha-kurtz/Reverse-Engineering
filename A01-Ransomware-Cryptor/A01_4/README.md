@@ -141,18 +141,15 @@ Create the required files:
 Copy only the RSA public key to the INetSim server to be served at the ransomware's request:
 
 ```bash
-sudo cp publickey.xml \
-    /var/lib/inetsim/http/fakefiles/A01_4_public_key.xml
+sudo cp A01_4_public_key.xml \
+    /var/lib/inetsim/http/fakefiles/publickey.xml
 ```
 
 Create the JSON response returned by the key-exfil endpoint:
 
 ```bash
-sudo tee \
-    /var/lib/inetsim/http/fakefiles/savekey_OK.json \
-    > /dev/null <<'EOF'
+cat /var/lib/inetsim/http/fakefiles/savekey_OK.json
 {"status":"ok","task":"Saved encrypted AES key"}
-EOF
 ```
 
 Place the [PNG ransomnote image](https://github.com/misha-kurtz/Reverse-Engineering/blob/main/A01-Ransomware-Cryptor/A01_4/A01_4_ransomnote.png) at:
