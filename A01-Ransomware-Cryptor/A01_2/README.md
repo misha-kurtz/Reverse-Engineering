@@ -1,4 +1,4 @@
-# A01_2 `C++` Hidden-Tear Variant: Local File Encryption with Ransom Note
+# A01_2 `C++` Hidden-Tear Variant: Encryption + Coercion
 
 ## Summary
 
