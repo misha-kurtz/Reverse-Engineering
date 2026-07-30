@@ -1,4 +1,4 @@
-# A01_4 Local File Encryption with Encryption-Key Exfiltration
+# A01_4 `C#` EDA2 Variant: Encryption + Key Exfiltration
 
 ## Summary
 
