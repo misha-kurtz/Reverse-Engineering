@@ -268,8 +268,7 @@ Populate with representative test documents.
 
 ## Expected Artifacts & Logs
 
-INetSim returns a static acknowledgment; it does not persist the
-submitted encrypted key as an application server would. The submitted form values must therefore be recovered from:
+Recover exfiltrated encrypted AES key from one of the following:
 
 * INetSim service logs `/var/log/inetsim/service.log`
 * A packet capture
