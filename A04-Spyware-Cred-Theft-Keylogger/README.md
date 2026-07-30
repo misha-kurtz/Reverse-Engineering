@@ -1,5 +1,5 @@
 
-## A04 Keylogger / Cred Theft / Exfil / Spyware Class
+## A04 Spyware / Cred Theft / Keylogger / Exfil Class 
 
 |ID|Technique|Core Transition|Dominant APIs / Mechanisms|Static Artifacts (Ghidra)|Dynamic Artifacts (Procmon / PCAP / Sysmon)|Semantic Meaning|
 |---|---|---|---|---|---|---|
