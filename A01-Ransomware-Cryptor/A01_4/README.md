@@ -216,7 +216,7 @@ to the INetSim server:
 ```
 
 The Windows VM should normally use the INetSim server as its DNS
-resolver. [**See section below for configuring Inetsim server.**](A01-Ransomware-Cryptor\A01_4\README.md##INetSim-Configuration-for-A01_4)
+resolver. [**See section below for configuring Inetsim server.**](A01-Ransomware-Cryptor\A01_4\README.md#INetSim-Configuration-for-A01_4)
 
 Name resolution can be tested with:
 
