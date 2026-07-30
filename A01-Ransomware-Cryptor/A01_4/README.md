@@ -120,14 +120,6 @@ resolve to:
 192.168.67.5
 ```
 
-A static DNS entry may be added when explicit hostname mapping is
-preferred:
-
-```text
-c2.lab.local 192.168.67.5
-```
-
-The exact static-entry file or directive depends on the existing INetSim DNS configuration used by the laboratory.
 ---
 
 ### 4. Install HTTP Fake Files
