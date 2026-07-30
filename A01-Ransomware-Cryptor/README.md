@@ -11,22 +11,22 @@
 
 ### Control Samples 
 
-1. [A01 `C#` Hidden-Tear variant](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A01-Ransomware-Cryptor/A01_1)
+1. [A01.1 `C#` Hidden-Tear variant](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A01-Ransomware-Cryptor/A01_1)
 	- local file encryption only
-2. [A02 `C++` Hidden-Tear variant](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A01-Ransomware-Cryptor/A01_2)
+2. [A01.2 `C++` Hidden-Tear variant](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A01-Ransomware-Cryptor/A01_2)
 	- local file encryption + coercion via ransomnote
-3. [A03 `C` Hidden-Tear variant](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A01-Ransomware-Cryptor/A01_3) 
+3. [A01.3 `C` Hidden-Tear variant](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A01-Ransomware-Cryptor/A01_3) 
 	- Encryption + Recovery Inhibition
 		- local file encryption
 		- enum/encryption of backup drive
 		- shadow copy deletion
 		- disable recovery mechanisms
 		- interfere with backup services
-4. [A04 `C#` EDA2 variant](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A01-Ransomware-Cryptor/A01_4)
+4. [A01.4 `C#` EDA2 variant](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A01-Ransomware-Cryptor/A01_4)
 	- local file encryption
 	- encryption of generated symmetric key with RSA public key
 	- exfil of encrypted key to C2
-5. [A05 `C++` EDA2 variant](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A01-Ransomware-Cryptor/A01_5)
+5. [A01.5 `C++` EDA2 variant](https://github.com/misha-kurtz/Reverse-Engineering/tree/main/A01-Ransomware-Cryptor/A01_5)
 	- double extortion: 
 		- exfil of files to C2 prior to encryption
 		- local encryption 
