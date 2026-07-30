@@ -158,7 +158,6 @@ If a backup volume is detected, files on that volume are also encrypted.
 
 ---
 
-#########################################################################
 
 # High-Level Encryption and Recovery Inhibition Flow
 

@@ -136,8 +136,6 @@ The original plaintext file is replaced by its encrypted counterpart.
 
 ---
 
-#########################################################################
-
 # High-Level Local Encryption Flow
 
 1. Launch the ransomware specimen

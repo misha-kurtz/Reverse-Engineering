@@ -165,7 +165,6 @@ No payment is required. Use the lab key file to decrypt test files.
 
 ---
 
-#########################################################################
 
 # High-Level Local Encryption and Coercion Flow
 
